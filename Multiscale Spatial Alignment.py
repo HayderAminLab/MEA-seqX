@@ -37,6 +37,19 @@ class MEASeqX_Project:
         self.clusters = ['DG', 'Hilus', 'CA3', 'CA1', 'EC', 'PC']
 
     def get_filename_path(self, filepath, filetype):
+        """
+        Search the paths for all files that match the filetype.
+
+                Parameters
+                ----------
+                filepath : string
+                    The folder path.
+                filetype: string
+                    The file type(e.g. .bxr, .xlsx).
+                Returns
+                -------
+                Returns the paths for all files math the filetype.
+        """
         filename = []
         Root = []
         for root, dirs, files in os.walk(filepath):
@@ -46,8 +59,22 @@ class MEASeqX_Project:
                     Root.append(root)
         return filename, Root
 
-
     def read_related_files(self):
+        """
+       Read the related files.
+
+               Returns
+               -------
+               csv_file: pandas.DataFrame tissue_positions_list.xlsx
+               'filtered_feature_bc_matrix.h5': parameters as followed
+                   -tissue_lowres_scalef.
+                   -features_name.
+                   -matr_raw
+                   -barcodes
+               img: png 'tissue_lowres_image.png'
+               csv_file_cluster:pandas.DataFrame 'Loupe Clusters.csv'
+
+       """
         ##########################
         h5_file_name = 'filtered_feature_bc_matrix.h5'
         print(self.srcfilepath)
@@ -100,8 +127,6 @@ class MEASeqX_Project:
             if img_file[i][0] != '.':
                 img_root = img_Root[i] + '/' + img_file[i]
         img = mpimg.imread(img_root)
-
-        # color_map,Cluster_list = self.get_cluster_for_ST(self, id = ix_filter, csv_file=csv_file)
         csv_file_cluster_name = 'Loupe Clusters.csv'
         csv_file_cluster_file, csv_file_cluster_Root = self.get_filename_path(self.srcfilepath, csv_file_cluster_name)
         for i in range(len(csv_file_cluster_file)):
@@ -113,9 +138,30 @@ class MEASeqX_Project:
         return csv_file,tissue_lowres_scalef,features_name,matr_raw,barcodes,img,csv_file_cluster
 
     def Multiscale_Spatial_Alignment(self,plot_all =False,move_reference_name = 'Distal CA1',rotate_reference_name ='Proximal CA3',Pre_processing=True,Zooming = False,get_coordinates_relation = True):
-        '''
+        """
+        Overlay the SRT .
 
-        '''
+                Parameters
+                ----------
+                plot_all : Boolean
+                    The folder path.
+                move_reference_name: string
+                    The file type(e.g. .bxr, .xlsx).
+                plot_all : string
+                    The folder path.
+                move_reference_name: string
+                    The file type(e.g. .bxr, .xlsx).
+               rotate_reference_name : string
+                    The folder path.
+               Pre_processing: Boolean
+                    The file type(e.g. .bxr, .xlsx).
+               Zooming: Boolean
+                    The file type(e.g. .bxr, .xlsx).
+               get_coordinates_relation: Boolean
+                    The file type(e.g. .bxr, .xlsx).
+                Returns
+                -------
+        """
         def clockwise_angle(v1, v2):
             x1, y1 = v1
             x2, y2 = v2
