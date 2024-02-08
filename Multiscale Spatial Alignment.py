@@ -139,7 +139,7 @@ class MEASeqX_Project:
 
     def Multiscale_Spatial_Alignment(self,plot_all =False,move_reference_name = 'Distal CA1',rotate_reference_name ='Proximal CA3',Pre_processing=True,Zooming = False,get_coordinates_relation = True):
         """
-        Overlay the SRT .
+        Overlay the SRT to nEphys.
 
                 Parameters
                 ----------
@@ -150,15 +150,15 @@ class MEASeqX_Project:
                 plot_all : string
                     The folder path.
                 move_reference_name: string
-                    The file type(e.g. .bxr, .xlsx).
+                    reference_name in 'nEphys Reference Points.csv'.
                rotate_reference_name : string
-                    The folder path.
+                    rotate_reference_name in 'nEphys Reference Points.csv'.
                Pre_processing: Boolean
-                    The file type(e.g. .bxr, .xlsx).
+                    Choose to flip or rotate the SRT iamge.
                Zooming: Boolean
-                    The file type(e.g. .bxr, .xlsx).
+                    automatic zoom the ST iamge to match nEphys iamge.
                get_coordinates_relation: Boolean
-                    The file type(e.g. .bxr, .xlsx).
+                   Choose to generate the final 'SRT_nEphys_Coordinates.xlsx".
                 Returns
                 -------
         """
