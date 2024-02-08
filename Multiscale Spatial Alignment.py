@@ -18,17 +18,20 @@ import help_functions.LFP_denosing as LFP_denosing
 from matplotlib.axes._axes import _log as matplotlib_axes_logger
 matplotlib_axes_logger.setLevel('ERROR')
 
-rows = 64
-cols = 64
+"""
+Images for SRT and nEphys were captured on different microscopes at different resolutions.
 
-quantile_value = 0.75
-SRT_to_nEphys_scale = 2
+The following input(s) are used to rescale the SRT H&E stained microscope slice image to the respective nEphys microscope slice image so that the regional strutucal clustering input is overlaid.
 
-Pixel_SRT_mm = 0.645/1000 #mm
-length_nEphys = 2.67 #mm
+n‐Ephys electrode‐SRT spot matching is not one‐to‐one due to the difference in technology resolution so each SRT spot is assigned to the related n‐Ephys electrode(s) based on overlay.
 
-SRT_diameter = 55 #um
-nEphys_diameter = 21 #um
+"""
+
+Pixel_SRT_mm = 0.645/1000 #H&E image was captured at a resolution of 1.550 pixel/1um -> 0.645um per pixel ->0.000645 mm (this value will change based on individual imaging settings)
+length_nEphys = 2.67 #nEphys MEA active area in mm
+
+SRT_diameter = 55 #SRT spot in um
+nEphys_diameter = 21 # nEphys electrode diamater in um
 
 class MEASeqX_Project:
 
@@ -38,7 +41,7 @@ class MEASeqX_Project:
 
     def get_filename_path(self, filepath, filetype):
         """
-        Search the paths for all files that match the filetype.
+        Search the provided path for all files that match the filetype specified.
 
                 Parameters
                 ----------
@@ -63,16 +66,24 @@ class MEASeqX_Project:
         """
        Read the related files.
 
-               Returns
-               -------
-               csv_file: pandas.DataFrame tissue_positions_list.xlsx
-               'filtered_feature_bc_matrix.h5': parameters as followed
-                   -tissue_lowres_scalef.
-                   -features_name.
-                   -matr_raw
-                   -barcodes
-               img: png 'tissue_lowres_image.png'
-               csv_file_cluster:pandas.DataFrame 'Loupe Clusters.csv'
+           File input needed:
+           -------
+                - 'filtered_feature_bc_matrix.h5' (spaceranger_count pipeline output)
+                - 'scalefactors_json.json' (spaceranger_count pipeline output)
+                - 'tissue_positions_list.csv' (spaceranger_count pipeline output)
+                - 'tissue_lowres_image.png' (spaceranger_count pipeline output)
+                - 'Loupe Clusters.csv' (independently generated tissue structural clusters using Loupe Browser)
+
+           Returns
+           -------
+           csv_file: pandas.DataFrame tissue_positions_list.xlsx
+           'filtered_feature_bc_matrix.h5': parameters as followed
+               -tissue_lowres_scalef.
+               -features_name.
+               -matr_raw
+               -barcodes
+           img: png 'tissue_lowres_image.png'
+           csv_file_cluster:pandas.DataFrame 'Loupe Clusters.csv'
 
        """
         ##########################
@@ -139,28 +150,40 @@ class MEASeqX_Project:
 
     def Multiscale_Spatial_Alignment(self,plot_all =False,move_reference_name = 'Distal CA1',rotate_reference_name ='Proximal CA3',Pre_processing=True,Zooming = False,get_coordinates_relation = True):
         """
-        Overlay the SRT to nEphys.
+        Provide the transcriptomic and electrophysiologic profiles of the same cell assembly with spatial context. Performs automatic slice alignment using image resizing and rotation based on reference points.
 
-                Parameters
-                ----------
-                plot_all : Boolean
-                    The folder path.
-                move_reference_name: string
-                    The file type(e.g. .bxr, .xlsx).
-                plot_all : string
-                    The folder path.
-                move_reference_name: string
-                    reference_name in 'nEphys Reference Points.csv'.
-               rotate_reference_name : string
-                    rotate_reference_name in 'nEphys Reference Points.csv'.
-               Pre_processing: Boolean
-                    Choose to flip or rotate the SRT iamge.
-               Zooming: Boolean
-                    automatic zoom the ST iamge to match nEphys iamge.
-               get_coordinates_relation: Boolean
-                   Choose to generate the final 'SRT_nEphys_Coordinates.xlsx".
-                Returns
-                -------
+            File input needed:
+            -------
+                - related files
+                - 'SRT Reference Points.csv'
+                - 'nEphys Reference Points.csv'
+
+            Parameters
+            ----------
+            plot_all : Boolean
+                The folder path.
+            move_reference_name: string
+                The file type(e.g. .bxr, .xlsx).
+            plot_all : string
+                The folder path.
+            move_reference_name: string
+                reference_name in 'nEphys Reference Points.csv'.
+            rotate_reference_name : string
+                rotate_reference_name in 'nEphys Reference Points.csv'.
+            Pre_processing: Boolean
+                Choose to flip or rotate the SRT iamge.
+            Zooming: Boolean
+                automatic zoom the ST iamge to match nEphys iamge.
+            get_coordinates_relation: Boolean
+                Choose to generate the final 'SRT_nEphys_Coordinates.xlsx".
+
+            Returns
+            -------
+
+            File output:
+            -------
+                - 'nEphys_SRT_overlay.png'
+                - 'SRT_nEphys_Coordinates.xlsx"
         """
         def clockwise_angle(v1, v2):
             x1, y1 = v1
@@ -519,7 +542,7 @@ class MEASeqX_Project:
             ax.set_aspect('equal', 'box')
 
             fig.tight_layout()
-            colorMapTitle_SRT = 'nEphys_SRT_final_active_nodes'
+            colorMapTitle_SRT = 'nEphys_SRT_overlay'
             fig.savefig(desfilepath + colorMapTitle_SRT + ".png", format='png', dpi=600)
             plt.close()
 
@@ -562,17 +585,10 @@ class MEASeqX_Project:
 
 
 if __name__ == '__main__':
-    # srcfilepath = r'/Volumes/ag-amin/SHARE/Xin Hu/10X Files/CellType/final_results/'  # main path ###r'/Volumes/ag-amin/SHARE/Xin Hu/10X Files/CellType/final_results/'
-    srcfilepath = r'Z:/ANALYSES/SPATIOSCALES- 10X genomics/Nature Communications Data Report/Data/Test/'  # main path
+    srcfilepath = r'Z:/ANALYSES/SPATIOSCALES- 10X genomics/Nature Communications Data Report/Data/Test2/'  # main path
     Analysis = MEASeqX_Project(srcfilepath)
 
     Analysis.Multiscale_Spatial_Alignment(plot_all=True, move_reference_name='Top DG', rotate_reference_name='Right DG',
                                 Pre_processing=True,
                                 get_coordinates_relation=True)  # 'Proximal CA3','Left DG','Distal CA1','Top DG','Right DG'#########Step 2
 
-
-'''
-Input: read_related_files; ".brw"; ".bxr"; ".npy" denoised files; Loupe Clusters; SRT Reference Points; nEphys Reference Points; tissue positions list
-
-Output: "SRT_nEphys_Coordinates_transfering.xlsx"
-'''
