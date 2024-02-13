@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Aug 19 2021
-@author:  Xin Hu
+Created on Sept 07 2021
+@author:  BIONICS_LAB
 @company: DZNE
 """
 import matplotlib.pyplot as plt
