@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sept 07 2021
-@author:  BIONICS_LAB
+Created on Aug 19 2021
+@author:  Xin Hu
 @company: DZNE
 """
 import matplotlib.pyplot as plt
@@ -49,15 +49,15 @@ class MEASeqX_Project:
         """
         Search the provided path for all files that match the filetype specified.
 
-            Parameters
-            ----------
-            filepath : string
-                The folder path.
-            filetype: string
-                The file type(e.g. .bxr, .xlsx).
-            Returns
-            -------
-            Returns the paths for all files math the filetype.
+                Parameters
+                ----------
+                filepath : string
+                    The folder path.
+                filetype: string
+                    The file type(e.g. .bxr, .xlsx).
+                Returns
+                -------
+                Returns the paths for all files math the filetype.
         """
         filename = []
         Root = []
@@ -321,20 +321,20 @@ class MEASeqX_Project:
             -------
             if plot_gene_expression = True AND select_plot = 'gene_list'
                 - '[gene_list]_gene_expression.png'
-                - '[gene_list]_gene_expression_clusters.xlsx'
+                - '[gene_list]_gene_expression_per_cluster.xlsx'
             if plot_gene_expression = True AND select_plot = 'select genes'
                 - 'select_gene_expression.png'
-                - 'select_gene_expression_clusters.xlsx'
+                - 'select_gene_expression_per_cluster.xlsx'
             if plot_gene_expression = True AND select_plot = 'top_expressed_genes'
                 - 'top_expressed_gene_expression.png'
-                - 'top_expressed_gene_expression_clusters.xlsx'
+                - 'top_expressed_gene_expression_per_cluster.xlsx'
             if plot_gene_expression = True AND select_plot = 'top_expressed_common_genes'
                 - 'top_expressed_common_gene_expression.png'
-                - 'top_expressed_common_gene_expression_clusters.xlsx'
+                - 'top_expressed_common_gene_expression_per_cluster.xlsx'
             if plot_mutual_information = True
                 - 'mutual_information.txt'
-                - '[gene_list]_mutual_information_map_sorted.xlsx'
-                - '[gene_list]_mutual_information_map_sorted.png'
+                - '[gene_list]_mutual_information_paired_cluster.xlsx'
+                - '[gene_list]_mutual_information_paired_cluster.png'
                 - '[gene_list]_SRT_functional_connectivity.xlsx'
                 - '[gene_list]_SRT_functional_connectivity.png'
             if plot_UMIs = True
@@ -679,7 +679,7 @@ class MEASeqX_Project:
         df = pd.DataFrame(
             {'Barcode': barcode_list_all, 'Channel Position': channel_position, 'gene Name': gene_name_all,
              'Gene Expression Level': gene_expression_values_all, 'Cluster': cluster_all})
-        df.to_excel(path + colorMapTitle + "_gene_expression_clusters" + ".xlsx", index=False)
+        df.to_excel(path + colorMapTitle + "_gene_expression_per_cluster" + ".xlsx", index=False)
 
     def plot_mutual_information(self, gene_expression_series=None, x_filter=None, extent=None, y_filter=None, img_cut=None, Channel_ID=None,gene_list_name=None, Barcodes=None, new_id_filter=None,value=0.9, barcode_filter_for_cluster=None, barcode_cluster=None, Loupe_cluster=None):
         ################################
@@ -763,7 +763,7 @@ class MEASeqX_Project:
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         ##############################
-        colorMapTitle = gene_list_name + "_mutual_information_map_sorted"
+        colorMapTitle = gene_list_name + "_mutual_information_paired_cluster"
         fig.savefig(desfilepath + colorMapTitle + ".png", format='png', dpi=600)
 
         d = {'Paired Cluster': paired_cluster, 'MI values': mi_values}
@@ -819,7 +819,7 @@ class MEASeqX_Project:
         Prepare mutual information distance score statistics
             File input needed:
             -------
-                - '[gene_list]_mutual_information_map_sorted.xlsx'
+                - '[gene_list]_mutual_information_paired_cluster.xlsx'
 
             Parameters
             -------
@@ -829,13 +829,13 @@ class MEASeqX_Project:
 
             File output:
             -------
-                - '[gene_list]_mutual_information_map_sorted_statistics.xlsx
+                - '[gene_list]_mutual_information_paired_cluster_statistics.xlsx
         """
 
         desfilepath = self.srcfilepath + 'Mutual_Information/'
         if not os.path.exists(desfilepath):
             os.mkdir(desfilepath)
-        filetype_excel = gene_list_choose + '_mutual_information_map_sorted.xlsx'
+        filetype_excel = gene_list_choose + '_mutual_information_paired_cluster.xlsx'
         filename_excel, Root = self.get_filename_path(self.srcfilepath, filetype_excel)
 
         for i in range(len(filename_excel)):
@@ -859,13 +859,13 @@ class MEASeqX_Project:
                      'SEM for MI values': Sem_for_clusters})
                 df.to_excel(desfilepath + filename_excel[i][:-5] + "_statistics" + ".xlsx", index=False)
 
-    def mutual_information_statistics_p_value(self, gene_list_choose='IEGs'):
+    def mutual_information_pooled_statistics(self, gene_list_choose='IEGs'):
         """
         Compare mutual information distance between input conditions i.e. SD and ENR
 
             File input needed:
             -------
-                - '[gene_list]_mutual_information_map_sorted.xlsx'
+                - '[gene_list]_mutual_information_paired_cluster.xlsx'
 
             Parameters
             -------
@@ -875,16 +875,16 @@ class MEASeqX_Project:
 
             File output:
             -------
-                - '[gene_list]_mutual_information_map_sorted_pool.xlsx'
-                - '[gene_list]_mutual_information_map_sorted_pool_p_values.xlsx'
+                - '[gene_list]_mutual_information_paired_cluster_pooled_statistics.xlsx'
+                - '[gene_list]_mutual_information_paired_cluster_pooled_statistics_p_values.xlsx'
         """
 
 
         path = self.srcfilepath[:self.srcfilepath.rfind('/')]
-        desfilepath = path + '/Mutual_Information_Statistics_Pooled/'
+        desfilepath = path + '/Mutual_Information_Pooled_Statistics/'
         if not os.path.exists(desfilepath):
             os.mkdir(desfilepath)
-        filetype_excel = gene_list_choose + '_mutual_information_map_sorted.xlsx'
+        filetype_excel = gene_list_choose + '_mutual_information_paired_cluster.xlsx'
         filename_excel, Root = self.get_filename_path(self.srcfilepath, filetype_excel)
         Cluster_con = []
         final_Gene_expression_clusters = pd.DataFrame()
@@ -900,7 +900,7 @@ class MEASeqX_Project:
         final_Gene_expression_clusters['Condition'] = Cluster_con
         final_Gene_expression_clusters = final_Gene_expression_clusters.drop(['level_0', 'index'], axis=1)
         final_Gene_expression_clusters.to_excel(
-            desfilepath + gene_list_choose + '_mutual_information_map_sorted_pool.xlsx', index=False)
+            desfilepath + gene_list_choose + '_mutual_information_paired_cluster_pooled_statistics.xlsx', index=False)
         p_values = []
         Paired_Cluster = []
         paired_cluster_uni = np.unique(final_Gene_expression_clusters['Paired Cluster'])
@@ -927,16 +927,16 @@ class MEASeqX_Project:
                 Paired_Cluster.append(clu)
 
         df = pd.DataFrame({'Clusters': Paired_Cluster, 'p_values': p_values})
-        df.to_excel(desfilepath + gene_list_choose + '_mutual_information_map_sorted_pool_p_values.xlsx',
+        df.to_excel(desfilepath + gene_list_choose + '_mutual_information_paired_cluster_pooled_statistics_p_values.xlsx',
                     index=False)
 
-    def gene_expression_group(self, gene_list_choose='IEGs'):
+    def gene_expression_pooled_statistics(self, gene_list_choose='IEGs'):
         """
         Compare gene expression value within a given gene list between conditions i.e. SD and ENR
 
             File input needed:
             -------
-                - '[gene_list]_gene_expression_clusters.xlsx'
+                - '[gene_list]_gene_expression_per_cluster.xlsx'
 
             Parameters
             -------
@@ -946,18 +946,18 @@ class MEASeqX_Project:
 
             File output:
             -------
-                - '[gene_list]_gene_expression_clusters_pool.xlsx'
-                - '[gene_list]_gene_expression_statistic.png'
-                - '[gene_list]_gene_expression_statistic_p_values.xlsx'
+                - '[gene_list]_gene_expression_per_cluster_pooled.xlsx'
+                - '[gene_list]_gene_expression_pooled_statistics.png'
+                - '[gene_list]_gene_expression_pooled_statistics_p_values.xlsx'
         """
         path = self.srcfilepath[:self.srcfilepath.rfind('/')]
-        desfilepath = path + '/Gene_Expression_Plots_Pooled/'
+        desfilepath = path + '/Gene_Expression_Pooled_Statistics/'
         if not os.path.exists(desfilepath):
             os.mkdir(desfilepath)
-        if os.path.exists(desfilepath + gene_list_choose + "_gene_expression_clusters_pool" + ".xlsx"):
-            print('Find ' + gene_list_choose + "_gene_expression_clusters_pool" + ".xlsx")
+        if os.path.exists(desfilepath + gene_list_choose + "_gene_expression_per_cluster_pooled" + ".xlsx"):
+            print('Find ' + gene_list_choose + "_gene_expression_per_cluster_pooled" + ".xlsx")
         else:
-            filetype_excel = gene_list_choose + '_gene_expression_clusters.xlsx'
+            filetype_excel = gene_list_choose + '_gene_expression_per_cluster.xlsx'
             filename_excel, Root = self.get_filename_path(self.srcfilepath, filetype_excel)
             Barcode = []
             Channel_Position = []
@@ -990,10 +990,10 @@ class MEASeqX_Project:
                  'Gene Expression Level': Gene_Expression_Level, 'Cluster': Cluster,
                  'File Name': file_name_all, 'Condition': Condition_all})
             df_Gene_expression_clusters_all.to_excel(
-                desfilepath + gene_list_choose + "_gene_expression_clusters_pool" + ".xlsx",
+                desfilepath + gene_list_choose + "_gene_expression_per_cluster_pooled" + ".xlsx",
                 index=False)
 
-        filetype_excel = gene_list_choose + "_gene_expression_clusters_pool" + ".xlsx"
+        filetype_excel = gene_list_choose + "_gene_expression_per_cluster_pooled" + ".xlsx"
         filename_excel, Root = self.get_filename_path(path, filetype_excel)
         for i in range(len(filename_excel)):
             if filename_excel[i][0] != '.':
@@ -1014,7 +1014,7 @@ class MEASeqX_Project:
                 print(top_high_expression_gene)
                 fig, ax = plt.subplots(ncols=1, nrows=int(len(top_high_expression_gene)), figsize=(10, 50))
                 count = 0
-                writer = pd.ExcelWriter(desfilepath + gene_list_choose + "_gene_expression_statistic_p_values" + '.xlsx',
+                writer = pd.ExcelWriter(desfilepath + gene_list_choose + "_gene_expression_pooled_statistics_p_values" + '.xlsx',
                                         engine='xlsxwriter')
                 for gene in top_high_expression_gene:
                     data_new = data.copy()
@@ -1060,7 +1060,7 @@ class MEASeqX_Project:
                     count += 1
 
                 plt.tight_layout()
-                fig.savefig(desfilepath + gene_list_choose + "_gene_expression_statistic" + ".png", format='png',
+                fig.savefig(desfilepath + gene_list_choose + "_gene_expression_pooled_statistics" + ".png", format='png',
                             dpi=600)
                 plt.close()
                 writer.save()
@@ -1072,14 +1072,14 @@ if __name__ == '__main__':
     for gene_list in column_list:
         Analysis.gene_expression(gene_list_name=gene_list,
                                  plot_gene_expression=True,
-                                 select_plot='top_expressed_common_genes',
+                                 select_plot='gene_list',
                                  top_gene_show=20,
                                  top_common_gene_show=20,
-                                 plot_mutual_information=False,
+                                 plot_mutual_information=True,
                                  plot_UMIs=False,
                                  PCA_Clustering=False,
                                  value=0.9)  # select_plot = 'gene_list','select_genes','top_expressed_genes','top_expressed_common_genes'
     for gene_list in column_list:
         Analysis.mutual_information_statistics(gene_list_choose=gene_list) # individual statistics
-        Analysis.mutual_information_statistics_p_value(gene_list_choose=gene_list) # pooled condition statistics (main path should contain the condition subfolders)
-    Analysis.gene_expression_group(gene_list_choose='IEGs') # pooled condition statistics (main path should contain the condition subfolders)
+        Analysis.mutual_information_pooled_statistics(gene_list_choose=gene_list) # pooled condition statistics (main path should contain the condition subfolders)
+    Analysis.gene_expression_pooled_statistics(gene_list_choose='IEGs') # pooled condition statistics (main path should contain the condition subfolders)
