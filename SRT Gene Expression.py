@@ -49,15 +49,15 @@ class MEASeqX_Project:
         """
         Search the provided path for all files that match the filetype specified.
 
-                Parameters
-                ----------
-                filepath : string
-                    The folder path.
-                filetype: string
-                    The file type(e.g. .bxr, .xlsx).
-                Returns
-                -------
-                Returns the paths for all files math the filetype.
+            Parameters
+            ----------
+            filepath : string
+                The folder path.
+            filetype: string
+                The file type(e.g. .bxr, .xlsx).
+            Returns
+            -------
+            Returns the paths for all files math the filetype.
         """
         filename = []
         Root = []
@@ -817,6 +817,7 @@ class MEASeqX_Project:
     def mutual_information_statistics(self, gene_list_choose='IEGs'):
         """
         Prepare mutual information distance score statistics
+
             File input needed:
             -------
                 - '[gene_list]_mutual_information_paired_cluster.xlsx'
@@ -861,7 +862,7 @@ class MEASeqX_Project:
 
     def mutual_information_pooled_statistics(self, gene_list_choose='IEGs'):
         """
-        Compare mutual information distance between input conditions i.e. SD and ENR
+        Compare mutual information distance scores between input conditions i.e. SD and ENR
 
             File input needed:
             -------
@@ -932,7 +933,7 @@ class MEASeqX_Project:
 
     def gene_expression_pooled_statistics(self, gene_list_choose='IEGs'):
         """
-        Compare gene expression value within a given gene list between conditions i.e. SD and ENR
+        Compare gene expression values within a given gene list between conditions i.e. SD and ENR
 
             File input needed:
             -------
