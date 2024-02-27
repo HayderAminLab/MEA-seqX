@@ -2363,26 +2363,26 @@ class MEASeqX_Project:
          """
 
         path = self.srcfilepath[:self.srcfilepath.rfind('/')]
-            desfilepath = path + '/Correlated_Network_Activity_Features_Pooled_Statistics/'
-            if not os.path.exists(desfilepath):
-                os.mkdir(desfilepath)
+        desfilepath = path + '/Correlated_Network_Activity_Features_Pooled_Statistics/'
+        if not os.path.exists(desfilepath):
+            os.mkdir(desfilepath)
 
-            cluster_all = self.clusters
-            cluster_all.append('All')
-            filetype_correlation = '_all_gene_expression_network_activity_features_p_values_without_filter.npy'
-            filename_correlation, Root_correlation = self.get_filename_path(self.srcfilepath, filetype_correlation)
-            final_Gene_Expression_network_activity_feature = pd.DataFrame()
-            for i in range(len(filename_correlation)):
-                if filename_correlation[i][0] != '.':
-                    gene_root = Root_correlation[i] + '/' + filename_correlation[i]
-                    # data = pd.read_excel(gene_root)
-                    data = np.load(gene_root, allow_pickle=True)
-                    columns_matrix = ['Gene Name', 'Parameters', 'Correlation', 'p_values', "Cluster", 'File name',
-                                      'Condition']
-                    Correlation_choose = pd.DataFrame(data, columns=columns_matrix)
-                    Correlation_choose.dropna(axis=0, how='any', inplace=True)
-                    final_Gene_Expression_network_activity_feature = pd.concat(
-                        [final_Gene_Expression_network_activity_feature, Correlation_choose], axis=0)
+        cluster_all = self.clusters
+        cluster_all.append('All')
+        filetype_correlation = '_all_gene_expression_network_activity_features_p_values_without_filter.npy'
+        filename_correlation, Root_correlation = self.get_filename_path(self.srcfilepath, filetype_correlation)
+        final_Gene_Expression_network_activity_feature = pd.DataFrame()
+        for i in range(len(filename_correlation)):
+            if filename_correlation[i][0] != '.':
+                gene_root = Root_correlation[i] + '/' + filename_correlation[i]
+                # data = pd.read_excel(gene_root)
+                data = np.load(gene_root, allow_pickle=True)
+                columns_matrix = ['Gene Name', 'Parameters', 'Correlation', 'p_values', "Cluster", 'File name',
+                                  'Condition']
+                Correlation_choose = pd.DataFrame(data, columns=columns_matrix)
+                Correlation_choose.dropna(axis=0, how='any', inplace=True)
+                final_Gene_Expression_network_activity_feature = pd.concat(
+                    [final_Gene_Expression_network_activity_feature, Correlation_choose], axis=0)
 
             p_adj = []
             p_adj_pattern = []
