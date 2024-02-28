@@ -54,8 +54,6 @@ Region = ['Cortex', 'Hippo']
 Cortex = ['EC', 'PC']
 Hippo = ['DG','Hilus','CA3','CA1']
 
-gene_list_choose = ['gene1','gene2','gene3','gene4']
-
 class MEASeqX_Project:
 
     def __init__(self, srcfilepath):
