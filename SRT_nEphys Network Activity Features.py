@@ -23,6 +23,7 @@ import scipy.sparse as sp_sparse
 import matplotlib.image as mpimg
 import statsmodels.stats.multitest as sm
 from matplotlib.axes._axes import _log as matplotlib_axes_logger
+import help_functions.LFP_denoising as LFP_denoising
 matplotlib_axes_logger.setLevel('ERROR')
 
 """
@@ -435,7 +436,7 @@ class MEASeqX_Project:
         lfpTimes_raw = np.asarray(filehdf5_bxr["3BResults"]["3BChEvents"]["LfpTimes"]) / samplingRate
         LfpForms = np.asarray(filehdf5_bxr["3BResults"]["3BChEvents"]["LfpForms"])
         ########################################################################################################and open these two to run denoising
-        # Analysis = help_functions.LFP_denosing.LFPAnalysis_Function(self.srcfilepath,condition_choose='BS')  # condition_choose ='OB' or 'BS'
+        # Analysis = help_functions.LFP_denoising.LFPAnalysis_Function(self.srcfilepath,condition_choose='BS')  # condition_choose ='OB' or 'BS'
         # lfpChId_raw, lfpTimes_raw, LfpForms = Analysis.AnalyzeExp(expFile=expFile)
         active_id = np.unique(lfpChId_raw)
         # print(lfpTimes_raw[-1])

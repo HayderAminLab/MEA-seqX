@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on August 10 2018
-@author:  Alessandro Maccione
-@company: 3Brain
-"""
-
 # Data input settings
 #mainPath            = '/Users/xinhu' #'C:\\_TEST\\LFPTest' #'C:\\Users\\alessandro.maccione\\Desktop' # main folder containing the experimental folders (one for each experiment)
 clusters            = ['DG_Infra','DG_Supra','Hilus','CA3','CA1','EC','PC']
