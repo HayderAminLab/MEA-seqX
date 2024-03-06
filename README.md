@@ -9,20 +9,30 @@ This platform also allows for the identification of different cell types based o
 
 ## **Contents**
 
+  - data - additional data needed to use and test run the repository. NOTE: This data can only be combined with the provided Zenodo datasets and cannot be used for personal data.
+  - help_functions - low-level functions used to clean and process nEphys data
+  - README - current file
+  - LICENSE - usage and redistrubution conditions
+  - Multiscale Spatial Alignment.py - main top-level function used to overlay the SRT and nEphys data 
+
+
 ## **Getting Started**
-  - Download SRT and nEphys data and separate into subfolders based on condition. i.e. SD and ENR.
+
+  - Download SRT and nEphys data from Zenodo and separate into subfolders based on condition i.e. SD and ENR. Include data from both the repository and downloaded datasets.
+  - If using personal data, format structure as
   - Clone the respository locally.
        > git clone https://github.com/HayderAminLab/MEA-seqX.git
   - Go to the directory and work through the codes in the following order:
     1. Multiscale Spatial Alignment: 
     2. SRT Gene Expression:
-    3. SRT_nEphys Network Activity Features
-    4. XGBoost Algorithm Prediction
-    5. SRT_nEphys Network Topological Metrics
-    6. Non-Negative Matrix Factorization
+    3. SRT_nEphys Network Activity Features: 
+    4. XGBoost Algorithm Prediction: 
+    5. SRT_nEphys Network Topological Metrics: 
+    6. Non-Negative Matrix Factorization: 
      
 ## **Data**
 
+The following datasets have been provided for using and test running the MEA-seqX platform. Additional data needed to run the repository for these datasets are included in the repository data subfolder.
   - Dataset of Spatial Transcriptomics Mouse Hippocampal Slices (https://doi.org/10.5281/zenodo.10626259)
   - Dataset of HD-MEA n-Ephys Mouse Hippocampal Slices (https://doi.org/10.5281/zenodo.10620559)
 
