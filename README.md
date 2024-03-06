@@ -1,1 +1,61 @@
-## MEA-seqX
+# **MEA-seqX: High‐resolution Profiling of Large‐scale Electrophysiological and Transcriptional Network Dynamics**
+
+![Figure 1](https://github.com/HayderAminLab/MEA-seqX/assets/158823360/15b48459-642f-4311-837e-eb733005b5ba)
+
+The platform integrates high-density microelectrode arrays, spatial transcriptomics, optical imaging, and advanced computational strategies for simultaneous recording and analysis of molecular and electrical network activities at the individual cell level. 
+
+It enables the study of nested dynamics between transcription and function, revealing coordinated spatiotemporal dynamics in brain circuitry at both molecular and functional levels. 
+This platform also allows for the identification of different cell types based on their distinct bimodal profiles and uses machine learning algorithms to predict network-wide electrophysiological features from spatial gene expression.
+
+## **Contents**
+
+## **Getting Started**
+  - Download SRT and nEphys data and separate into subfolders based on condition. i.e. SD and ENR.
+  - Clone the respository locally.
+       > git clone https://github.com/HayderAminLab/MEA-seqX.git
+  - Go to the directory and work through the codes in the following order:
+    1. Multiscale Spatial Alignment: 
+    2. SRT Gene Expression:
+    3. SRT_nEphys Network Activity Features
+    4. XGBoost Algorithm Prediction
+    5. SRT_nEphys Network Topological Metrics
+    6. Non-Negative Matrix Factorization
+     
+## **Data**
+
+  - Dataset of Spatial Transcriptomics Mouse Hippocampal Slices (https://doi.org/10.5281/zenodo.10626259)
+  - Dataset of HD-MEA n-Ephys Mouse Hippocampal Slices (https://doi.org/10.5281/zenodo.10620559)
+
+## **Requirements**
+
+Python >= 3.7; all analyses and testing were performed using Python 3.7 within PyCharm V.2023.2
+
+Software packages and tools used for all analyses and testing are as follows with links to repositories:
+
+  - sklearn(scikit-learn) V.1.2.2 (https://github.com/scikit-learn/scikit-learn)
+     - sklearn.metrics.explained_variance_score
+     - sklearn.metrics.normalized_mutual_info_score 
+     - sklearn.decomposition.NMF
+     - sklearn.decomposition.PCA
+     - sklearn.model_selection.train_test_split
+     - sklearn.ensemble.GradientBoostingClassifier
+  - scipy V.1.10.1 (https://github.com/scipy)
+     - scipy.signal 
+     - scipy.stats
+  - networkx V.2.6.3 (https://github.com/networkx) 
+  - scanpy V.1.9.3  https://github.com/scverse/scanpy
+     - scanpy.pp.normalize_total
+     - scanpy.tl.dpt 
+  - pyreadr V.0.4.7 (https://github.com/ofajardo/pyreadr)
+  - powerlaw V.1.5 (https://pypi.org/project/powerlaw/)
+  - anndata V.0.8.0 (https://github.com/scverse/anndata)
+  - matplotlib V.3.5.3 (https://matplotlib.org/)
+  - h5py V.3.8.0  (https://github.com/h5py)
+  - numpy V.1.21.6 (https://github.com/numpy)
+  - pandas V.1.1.5 (https://github.com/pandas-dev)
+  - seaborn V.0.11.1 (https://github.com/mwaskom/seaborn)
+  - scprep V.1.2.3 (https://github.com/KrishnaswamyLab/scprep)
+  - Seurat V.4.0.0 (https://github.com/satijalab/seurat)
+  - STutility V.0.1.0 (https://ludvigla.github.io/STUtility_web_site/)
+  - PHATE (https://github.com/KrishnaswamyLab/PHATE)
+  - CARD (https://github.com/YingMa0107/CARD)
