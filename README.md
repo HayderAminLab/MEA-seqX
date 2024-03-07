@@ -13,22 +13,28 @@ This platform also allows for the identification of different cell types based o
   - help_functions - low-level functions used to clean and process nEphys data
   - README - current file
   - LICENSE - usage and redistrubution conditions
-  - Multiscale Spatial Alignment.py - main top-level function used to overlay the SRT and nEphys data 
+  - Multiscale Spatial Alignment.py - main top-level function used to overlay the SRT and nEphys data with automatic slice alignment
+  - SRT Gene Expression.py - top-level functions used to plot provided gene lists and select genes for further analysis
+  - SRT_nEphys Network Activity Features.py - main top-level, multi-step functions used to calculate specified network activity featurse from nEphys data and correlate them with gene expression values from SRT gene lists
+  - XGBoost Algorithm Prediction.py - top-level function used to predict nEphys network activity features from SRT gene list expression values using XGBoost Algorithm
+  - SRT_nEphys Network Topological Metrics.py - main top-level, multi-step functions used to calculate specified network topological metrics from nEphys data and correlate them with gene expression values from SRT gene lists
+  - Non-Negative Matrix Factorization.py - top level function used to identify distinct spatiotemporal patterns across the combined SRT and n‐Ephys modalities
 
 
 ## **Getting Started**
 
   - Download SRT and nEphys data from Zenodo and separate into subfolders based on condition i.e. SD and ENR. Include data from both the repository and downloaded datasets.
-  - If using personal data, format structure as
+  - If using personal data, format folder structure as instructed for the provided data. 
   - Clone the respository locally.
        > git clone https://github.com/HayderAminLab/MEA-seqX.git
   - Go to the directory and work through the codes in the following order:
-    1. Multiscale Spatial Alignment: 
-    2. SRT Gene Expression:
-    3. SRT_nEphys Network Activity Features: 
-    4. XGBoost Algorithm Prediction: 
-    5. SRT_nEphys Network Topological Metrics: 
-    6. Non-Negative Matrix Factorization: 
+    1. Multiscale Spatial Alignment
+    2. SRT Gene Expression
+    3. SRT_nEphys Network Activity Features
+    4. XGBoost Algorithm Prediction
+    5. SRT_nEphys Network Topological Metrics
+    6. Non-Negative Matrix Factorization
+   NOTE: For multi-step functions follow the order specified in the code. 
      
 ## **Data**
 
