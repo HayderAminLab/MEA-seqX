@@ -14,7 +14,7 @@ import os
 import scipy.sparse as sp_sparse
 import matplotlib.image as mpimg
 import cv2
-import help_functions.LFP_denosing as LFP_denosing
+import help_functions.LFP_denoising as LFP_denoising
 from matplotlib.axes._axes import _log as matplotlib_axes_logger
 matplotlib_axes_logger.setLevel('ERROR')
 
@@ -184,6 +184,7 @@ class MEASeqX_Project:
             -------
                 - 'nEphys_SRT_overlay.png'
                 - 'SRT_nEphys_Multiscale_Coordinates.xlsx"
+                - denoising files
         """
         def clockwise_angle(v1, v2):
             x1, y1 = v1
@@ -213,12 +214,12 @@ class MEASeqX_Project:
                     ChsGroups['Name'] = [i.decode("utf-8") for i in ChsGroups['Name']]
                 MeaChs2ChIDsVector = np.asarray(filehdf5_bxr["3BResults"]["3BInfo"]["MeaChs2ChIDsVector"])
                 ########################
-                if os.path.exists(self.srcfilepath + expFile[:-4] + '_denosed_LfpChIDs' + '.npy') and os.path.exists(
-                        self.srcfilepath + expFile[:-4] + '_denosed_LfpTimes' + '.npy'):
-                    lfpChId_raw = np.load(self.srcfilepath + expFile[:-4] + '_denosed_LfpChIDs' + '.npy')
-                    lfpTimes_raw = np.load(self.srcfilepath + expFile[:-4] + '_denosed_LfpTimes' + '.npy')
+                if os.path.exists(self.srcfilepath + expFile[:-4] + '_denoised_LfpChIDs' + '.npy') and os.path.exists(
+                        self.srcfilepath + expFile[:-4] + '_denoised_LfpTimes' + '.npy'):
+                    lfpChId_raw = np.load(self.srcfilepath + expFile[:-4] + '_denoised_LfpChIDs' + '.npy')
+                    lfpTimes_raw = np.load(self.srcfilepath + expFile[:-4] + '_denoised_LfpTimes' + '.npy')
                 else:
-                    Analysis = LFP_denosing.LFPAnalysis_Function(self.srcfilepath,condition_choose='BS')  # condition_choose ='OB' or 'BS'
+                    Analysis = LFP_denoising.LFPAnalysis_Function(self.srcfilepath,condition_choose='BS')  # condition_choose ='OB' or 'BS'
                     lfpChId_raw, lfpTimes_raw, LfpForms = Analysis.AnalyzeExp(expFile=expFile)
 
 

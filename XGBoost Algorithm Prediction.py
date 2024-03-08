@@ -5,16 +5,11 @@ Created on Dec 20 2021
 @company: DZNE
 """
 import matplotlib.pyplot as plt
-from scipy.signal import butter, lfilter, hilbert
 from scipy import signal,stats
-import h5py
 import numpy as np
 import pandas as pd
-import json
 import os
 import seaborn as sns
-import scipy.sparse as sp_sparse
-import matplotlib.image as mpimg
 from sklearn.metrics import r2_score,explained_variance_score
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import train_test_split
@@ -39,7 +34,7 @@ condition2_path = r'Z:/ANALYSES/SPATIOSCALES- 10X genomics/Data/ENR/'
 color = ['silver', 'dodgerblue']  # color for pooled plotting of conditions
 color_choose = ['silver', 'dodgerblue','red','green','purple'] # color for multiple gene plots
 
-network_activity_feature = ['LFPRate','Delay','Energy','mean positive peaks','mean negative peaks','Amplitude','positive_peak_count','negative_peak_count','CT','Frequency']
+network_activity_feature = ['LFPRate','Delay','Energy','Frequency','Amplitude','positive_peaks','negative_peaks','positive_peak_count','negative_peak_count','CT','CV2','Fano']
 
 quantile_value = 0.75
 
@@ -99,32 +94,30 @@ class MEASeqX_Project:
         if not os.path.exists(desfilepath):
             os.mkdir(desfilepath)
         type = network_activity_feature
-        if type == 'LFPRate':
+        if type == 'LFPRate':  ##network_activity_feature = 'LFPRate','Delay','Energy'
             type_name = 'LFP Rate(Event/min)'
         elif type == 'Delay':
             type_name = 'Delay(s)'
-        elif type == 'CV2':
-            type_name = 'CV2'
-        elif type == 'Fano':
-            type_name = 'Fano Factor'
-        elif type == 'Fano':
-            type_name = 'Fano Factor'
-        elif type == 'mean positive peaks':
-            type_name = 'mean positive peaks(uA)'
-        elif type == 'mean negative peaks':
-            type_name = 'mean negative peaks(uA)'
-        elif type == 'Amplitude':
-            type_name = 'Amplitude(uA)'
-        elif type == 'positive_peak_count':
-            type_name = 'positive_peak_count'
-        elif type == 'negative_peak_count':
-            type_name = 'negative_peak_count'
-        elif type == 'CT':
-            type_name = 'CT'
+        elif type == 'Energy':
+            type_name = 'Energy'
         elif type == 'Frequency':
             type_name = 'Frequency'
+        elif type == 'Amplitude':
+            type_name = 'Amplitude(uV)'
+        elif type == 'positive_peaks':
+            type_name = 'Mean Positive Peaks(uV)'
+        elif type == 'negative_peaks':
+            type_name = 'Mean Negative Peaks(uV)'
+        elif type == 'positive_peak_count':
+            type_name = 'Positive Peak Count'
+        elif type == 'negative_peak_count':
+            type_name = 'Negative Peak Count'
+        elif type == 'CT':
+            type_name = 'CT'
+        elif type == 'CV2':
+            type_name = 'CV2'
         else:
-            type_name = 'Energy'
+            type_name = 'Fano Factor'
 
         if os.path.exists(desfilepath+ gene_list_name + '_network_activity_feature_prediction_from_gene_expression' + '_' + network_activity_feature + '_xgboost' + ".xlsx"):
             df = pd.read_excel(desfilepath+ gene_list_name + '_network_activity_feature_prediction_from_gene_expression' + '_' + network_activity_feature + '_xgboost' + ".xlsx")
@@ -339,28 +332,26 @@ class MEASeqX_Project:
                 type_name_1 = 'LFP Rate(Event/min)'
             elif type_name == 'Delay':
                 type_name_1 = 'Delay(s)'
-            elif type_name == 'CV2':
-                type_name_1 = 'CV2'
-            elif type_name == 'Fano':
-                type_name_1 = 'Fano Factor'
-            elif type_name == 'Fano':
-                type_name_1 = 'Fano Factor'
-            elif type_name == 'mean positive peaks':
-                type_name_1 = 'mean positive peaks(uA)'
-            elif type_name == 'mean negative peaks':
-                type_name_1 = 'mean negative peaks(uA)'
-            elif type_name == 'Amplitude':
-                type_name_1 = 'Amplitude(uA)'
-            elif type_name == 'positive_peak_count':
-                type_name_1 = 'positive_peak_count'
-            elif type_name == 'negative_peak_count':
-                type_name_1 = 'negative_peak_count'
-            elif type_name == 'CT':
-                type_name_1 = 'CT'
+            elif type_name == 'Energy':
+                type_name_1 = 'Energy'
             elif type_name == 'Frequency':
                 type_name_1 = 'Frequency'
+            elif type_name == 'Amplitude':
+                type_name_1 = 'Amplitude(uV)'
+            elif type_name == 'positive_peaks':
+                type_name_1 = 'Mean Positive Peaks(uV)'
+            elif type_name == 'negative_peaks':
+                type_name_1 = 'Mean Negative Peaks(uV)'
+            elif type_name == 'positive_peak_count':
+                type_name_1 = 'Positive Peak Count'
+            elif type_name == 'negative_peak_count':
+                type_name_1 = 'Negative Peak Count'
+            elif type_name == 'CT':
+                type_name_1 = 'CT'
+            elif type_name == 'CV2':
+                type_name_1 = 'CV2'
             else:
-                type_name_1 = 'Energy'
+                type_name_1 = 'Fano Factor'
             filetype_xlsx = gene_list_name + '_gene_expression_network_activity_feature_per_cluster_pooled' + '_' + type_name + ".xlsx"
             # filename_xlsx, Root = self.get_filename_path(self.srcfilepath, filetype_xlsx)
             #######################plot

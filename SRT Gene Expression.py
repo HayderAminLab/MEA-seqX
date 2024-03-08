@@ -335,8 +335,8 @@ class MEASeqX_Project:
                 - 'mutual_information.txt'
                 - '[gene_list]_mutual_information_paired_cluster.xlsx'
                 - '[gene_list]_mutual_information_paired_cluster.png'
-                - '[gene_list]_SRT_functional_connectivity.xlsx'
-                - '[gene_list]_SRT_functional_connectivity.png'
+                - '[gene_list]_SRT_mutual_information_connectivity.xlsx'
+                - '[gene_list]_SRT_mutual_information_connectivity.png'
             if plot_UMIs = True
                 - 'all_gene_UMI.png'
             if PCA_clustering = True
@@ -793,7 +793,7 @@ class MEASeqX_Project:
         dataframe = pd.DataFrame(
             {'Channel ID': Channel_ID_new, 'Barcodes_Channel_ID': Barcodes_Channel_ID, 'Corr_id': Corr_id,
              'Barcodes_Corr_id': Barcodes_Corr_id, 'coor_Per_data': coor_Value})
-        dataframe.to_excel(self.srcfilepath + gene_list_name + '_SRT_functional_connectivity' + ".xlsx", index=False)
+        dataframe.to_excel(self.srcfilepath + gene_list_name + '_SRT_mutual_information_connectivity' + ".xlsx", index=False)
         # print(dataframe)
         fig, ax = plt.subplots()
         ax.imshow(img_cut, alpha=1)
@@ -811,7 +811,7 @@ class MEASeqX_Project:
         ax.set_ylim(max(y_coordinate), 0)
         ax.set_aspect('equal', 'box')
         ax.grid(False)
-        colorMapTitle = gene_list_name + "_SRT_functional_connectivity"
+        colorMapTitle = gene_list_name + "_SRT_mutual_information_connectivity"
         fig.savefig(self.srcfilepath + colorMapTitle + ".png", format='png', dpi=600)
 
     def mutual_information_statistics(self, gene_list_choose='IEGs'):

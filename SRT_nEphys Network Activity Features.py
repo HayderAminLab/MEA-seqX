@@ -45,7 +45,7 @@ condition2_path = r'Z:/ANALYSES/SPATIOSCALES- 10X genomics/Data/ENR/'
 color = ['silver', 'dodgerblue']  # color for pooled plotting of conditions
 color_choose = ['silver', 'dodgerblue','red','green','purple'] # color for multiple gene plots
 
-network_activity_feature = ['LFPRate','Delay','Energy','mean positive peaks','mean negative peaks','Amplitude','positive_peak_count','negative_peak_count','CT','Frequency']
+network_activity_feature = ['LFPRate','Delay','Energy','Frequency','Amplitude','positive_peaks','negative_peaks','positive_peak_count','negative_peak_count','CT','CV2','Fano']
 
 quantile_value = 0.75
 
@@ -398,6 +398,7 @@ class MEASeqX_Project:
             -------
                 - related files
                 - '[file].bxr'
+                - denoising files
 
             Parameters
             -------
@@ -436,8 +437,8 @@ class MEASeqX_Project:
         lfpTimes_raw = np.asarray(filehdf5_bxr["3BResults"]["3BChEvents"]["LfpTimes"]) / samplingRate
         LfpForms = np.asarray(filehdf5_bxr["3BResults"]["3BChEvents"]["LfpForms"])
         ########################################################################################################and open these two to run denoising
-        # Analysis = help_functions.LFP_denoising.LFPAnalysis_Function(self.srcfilepath,condition_choose='BS')  # condition_choose ='OB' or 'BS'
-        # lfpChId_raw, lfpTimes_raw, LfpForms = Analysis.AnalyzeExp(expFile=expFile)
+        Analysis = LFP_denoising.LFPAnalysis_Function(self.srcfilepath,condition_choose='BS')  # condition_choose ='OB' or 'BS'
+        lfpChId_raw, lfpTimes_raw, LfpForms = Analysis.AnalyzeExp(expFile=expFile)
         active_id = np.unique(lfpChId_raw)
         # print(lfpTimes_raw[-1])
         cluster_ID = [(ChsGroups['Chs'][i][j][0] - 1) * 64 + (ChsGroups['Chs'][i][j][1] - 1) for i in range(len(ChsGroups['Chs'])) for j in range(len(ChsGroups['Chs'][i]))]
@@ -573,10 +574,259 @@ class MEASeqX_Project:
         new_Col = MeaChs2ChIDsVector["Row"] - 1
         print(LFP_rate)
         # print(len(positive_peak_count),len(negative_peak_count),len(CT),len(positive_peaks),len(negative_peaks),len(lfpChId),len(energy_all))
-        df = pd.DataFrame({'Channel ID': lfpChId, 'LFP Rate(Event/min)': LFP_rate, 'Delay(s)': Delay,'CV2': CV2_all,'max positive peaks(uA)': positive_peaks, 'max negative peaks(uA)':negative_peaks,
-             'positive_peak_count':positive_peak_count, 'negative_peak_count': negative_peak_count,
-             'CT': CT,'Fano Factor':Fano,'Energy':energy_all,'Frequency':frequency, 'CLuster': cluster_Name,'x_coordinate': [new_Row[i] for i in lfpChId],'y_coordinate': [new_Col[i] for i in lfpChId]})
+        df = pd.DataFrame({'Channel ID': lfpChId, 'LFP Rate(Event/min)': LFP_rate, 'Delay(s)': Delay,'Energy':energy_all,'Frequency':frequency, 'Amplitude(uV)': amplitude,
+                           'Mean Positive Peaks(uV)': positive_peaks, 'Mean Negative Peaks(uV)': negative_peaks,'Positive Peak Count':positive_peak_count, 'Negative Peak Count': negative_peak_count,
+                           'CT': CT, 'CV2': CV2_all, 'Fano Factor': Fano, 'Cluster': cluster_Name,'x_coordinate': [new_Row[i] for i in lfpChId],'y_coordinate': [new_Col[i] for i in lfpChId]})
         df.to_excel(self.srcfilepath + expFile[:-4] + "_network_activity_features_per_cluster" + ".xlsx", index=False)
+
+    def coordinates_for_network_activity_features(self):
+        """
+        Provide the transcriptomic and electrophysiologic overlay coordinates for network activity features.
+
+            File input needed:
+            -------
+                - related files
+                - '[file].bxr'
+                - 'SRT_nEphys_Multiscale_Coordinates.xlsx'
+
+            Parameters
+            -------
+
+            Returns
+            -------
+
+            File output:
+            -------
+                - 'SRT_nEphys_Multiscale_Coordinates_for_network_activity_features.xlsx'
+        """
+
+        filetype_SRT_nEphys_Coordinates = 'SRT_nEphys_Multiscale_Coordinates.xlsx'
+        filename_SRT_nEphys_Coordinates, Root = self.get_filename_path(self.srcfilepath, filetype_SRT_nEphys_Coordinates)
+        for i in range(len(filename_SRT_nEphys_Coordinates)):
+            if filename_SRT_nEphys_Coordinates[i][0] != '.':
+                SRT_nEphys_Coordinates_root = Root[i] + '/' + filename_SRT_nEphys_Coordinates[i]
+
+        data_SRT_nEphys_Coordinates = pd.read_excel(SRT_nEphys_Coordinates_root)
+
+        filehdf5_bxr_name = '.bxr'
+        filehdf5_bxr_file, filehdf5_bxr_Root = self.get_filename_path(self.srcfilepath, filehdf5_bxr_name)
+
+        for i in range(len(filehdf5_bxr_file)):
+            if filehdf5_bxr_file[i][0] != '.':
+                filehdf5_bxr_root = filehdf5_bxr_Root[i] + '/' + filehdf5_bxr_file[i]
+                expFile = filehdf5_bxr_file[i]
+        data_nEphys = pd.read_excel(self.srcfilepath + expFile[:-4] + '_network_activity_features_per_cluster' + ".xlsx")
+        filehdf5_bxr = h5py.File(filehdf5_bxr_root, 'r')
+        MeaChs2ChIDsVector = np.asarray(filehdf5_bxr["3BResults"]["3BInfo"]["MeaChs2ChIDsVector"])
+        coordinate_nEphys = [[MeaChs2ChIDsVector["Col"][id] - 1, MeaChs2ChIDsVector["Row"][id] - 1] for id in
+                           data_nEphys['Channel ID']]
+        cluster = []
+        barcodes = []
+        nEphys_coordinate = []
+        result_Lfprate_nEphys = []
+        result_delay_nEphys= []
+        result_energy_nEphys = []
+        result_frequency_nEphys = []
+        result_amplitude_nEphys = []
+        result_positive_peaks_nEphys = []
+        result_negative_peaks_nEphys = []
+        result_positive_peak_count_nEphys = []
+        result_negative_peak_count_nEphys = []
+        result_CT_nEphys = []
+        result_CV2_nEphys = []
+        result_Fano_nEphys = []
+
+        for cor in range(len(data_SRT_nEphys_Coordinates['Barcodes'])): #####LFP Rate
+            related_LFP_cor = literal_eval(data_SRT_nEphys_Coordinates['Coordinates in nEphys'][cor])
+            if len(related_LFP_cor) > 0:
+                result_Lfprate_nEphys_mean = []  # clustering coefficient
+                for cor_in_nEphys in related_LFP_cor:
+                    if cor_in_nEphys in list(coordinate_nEphys):
+                        index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
+                        result_Lfprate_nEphys_mean.append(float(data_nEphys['LFP Rate(Event/min)'][index_in_nEphys]))
+                    else:
+                        result_Lfprate_nEphys_mean.append(0)
+                cluster.append(data_SRT_nEphys_Coordinates['Cluster'][cor])
+                barcodes.append(data_SRT_nEphys_Coordinates['Barcodes'][cor])
+                nEphys_coordinate.append(related_LFP_cor)
+                result_Lfprate_nEphys.append(np.mean([i for i in result_Lfprate_nEphys_mean if i == i]))
+
+        for cor in range(len(data_SRT_nEphys_Coordinates['Barcodes'])): #####Delay
+            related_delay_cor = literal_eval(data_SRT_nEphys_Coordinates['Coordinates in nEphys'][cor])
+            if len(related_delay_cor) > 0:
+                result_delay_nEphys_mean = []
+                for cor_in_nEphys in related_delay_cor:
+                    if cor_in_nEphys in list(coordinate_nEphys):
+                        index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
+                        result_delay_nEphys_mean.append(float(data_nEphys['Delay(s)'][index_in_nEphys]))
+                    else:
+                        result_delay_nEphys_mean.append(0)
+                cluster.append(data_SRT_nEphys_Coordinates['Cluster'][cor])
+                barcodes.append(data_SRT_nEphys_Coordinates['Barcodes'][cor])
+                nEphys_coordinate.append(related_delay_cor)
+                result_delay_nEphys.append(np.mean([i for i in result_delay_nEphys_mean if i == i]))
+
+        for cor in range(len(data_SRT_nEphys_Coordinates['Barcodes'])):  #####Energy
+            related_energy_cor = literal_eval(data_SRT_nEphys_Coordinates['Coordinates in nEphys'][cor])
+            if len(related_energy_cor) > 0:
+                result_energy_nEphys_mean = []
+                for cor_in_nEphys in related_energy_cor:
+                    if cor_in_nEphys in list(coordinate_nEphys):
+                        index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
+                        result_energy_nEphys_mean.append(float(data_nEphys['Energy'][index_in_nEphys]))
+                    else:
+                        result_energy_nEphys_mean.append(0)
+                cluster.append(data_SRT_nEphys_Coordinates['Cluster'][cor])
+                barcodes.append(data_SRT_nEphys_Coordinates['Barcodes'][cor])
+                nEphys_coordinate.append(related_energy_cor)
+                result_energy_nEphys.append(np.mean([i for i in result_energy_nEphys_mean if i == i]))
+
+        for cor in range(len(data_SRT_nEphys_Coordinates['Barcodes'])): #####Frequency
+            related_frequency_cor = literal_eval(data_SRT_nEphys_Coordinates['Coordinates in nEphys'][cor])
+            if len(related_frequency_cor) > 0:
+                result_frequency_nEphys_mean = []
+                for cor_in_nEphys in related_frequency_cor:
+                    if cor_in_nEphys in list(coordinate_nEphys):
+                        index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
+                        result_frequency_nEphys_mean.append(float(data_nEphys['Frequency'][index_in_nEphys]))
+                    else:
+                        result_delay_nEphys_mean.append(0)
+                cluster.append(data_SRT_nEphys_Coordinates['Cluster'][cor])
+                barcodes.append(data_SRT_nEphys_Coordinates['Barcodes'][cor])
+                nEphys_coordinate.append(related_delay_cor)
+                result_frequency_nEphys.append(np.mean([i for i in result_frequency_nEphys_mean if i == i]))
+
+        for cor in range(len(data_SRT_nEphys_Coordinates['Barcodes'])): #####Amplitude
+            related_amplitude_cor = literal_eval(data_SRT_nEphys_Coordinates['Coordinates in nEphys'][cor])
+            if len(related_amplitude_cor) > 0:
+                result_amplitude_nEphys_mean = []
+                for cor_in_nEphys in related_amplitude_cor:
+                    if cor_in_nEphys in list(coordinate_nEphys):
+                        index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
+                        result_amplitude_nEphys_mean.append(float(data_nEphys['Amplitude(uV)'][index_in_nEphys]))
+                    else:
+                        result_amplitude_nEphys_mean.append(0)
+                cluster.append(data_SRT_nEphys_Coordinates['Cluster'][cor])
+                barcodes.append(data_SRT_nEphys_Coordinates['Barcodes'][cor])
+                nEphys_coordinate.append(related_delay_cor)
+                result_amplitude_nEphys.append(np.mean([i for i in result_amplitude_nEphys_mean if i == i]))
+
+        for cor in range(len(data_SRT_nEphys_Coordinates['Barcodes'])):  #####Positive Peaks
+            related_positive_peaks_cor = literal_eval(data_SRT_nEphys_Coordinates['Coordinates in nEphys'][cor])
+            if len(related_positive_peaks_cor) > 0:
+                result_positive_peaks_nEphys_mean = []
+                for cor_in_nEphys in related_positive_peaks_cor:
+                    if cor_in_nEphys in list(coordinate_nEphys):
+                        index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
+                        result_positive_peaks_nEphys_mean.append(
+                            float(data_nEphys['Mean Positive Peaks(uV)'][index_in_nEphys]))
+                    else:
+                        result_positive_peaks_nEphys_mean.append(0)
+                cluster.append(data_SRT_nEphys_Coordinates['Cluster'][cor])
+                barcodes.append(data_SRT_nEphys_Coordinates['Barcodes'][cor])
+                nEphys_coordinate.append(related_delay_cor)
+                result_positive_peaks_nEphys.append(np.mean([i for i in result_positive_peaks_nEphys_mean if i == i]))
+
+        for cor in range(len(data_SRT_nEphys_Coordinates['Barcodes'])):  #####Negative Peaks
+            related_negative_peaks_cor = literal_eval(data_SRT_nEphys_Coordinates['Coordinates in nEphys'][cor])
+            if len(related_negative_peaks_cor) > 0:
+                result_negative_peaks_nEphys_mean = []
+                for cor_in_nEphys in related_negative_peaks_cor:
+                    if cor_in_nEphys in list(coordinate_nEphys):
+                        index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
+                        result_negative_peaks_nEphys_mean.append(
+                            float(data_nEphys['Mean Negative Peaks(uV)'][index_in_nEphys]))
+                    else:
+                        result_negative_peaks_nEphys_mean.append(0)
+                cluster.append(data_SRT_nEphys_Coordinates['Cluster'][cor])
+                barcodes.append(data_SRT_nEphys_Coordinates['Barcodes'][cor])
+                nEphys_coordinate.append(related_delay_cor)
+                result_negative_peaks_nEphys.append(np.mean([i for i in result_negative_peaks_nEphys_mean if i == i]))
+
+        for cor in range(len(data_SRT_nEphys_Coordinates['Barcodes'])):  #####Positive Peak Count
+            related_positive_peak_count_cor = literal_eval(data_SRT_nEphys_Coordinates['Coordinates in nEphys'][cor])
+            if len(related_positive_peak_count_cor) > 0:
+                result_positive_peak_count_nEphys_mean = []
+                for cor_in_nEphys in related_positive_peak_count_cor:
+                    if cor_in_nEphys in list(coordinate_nEphys):
+                        index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
+                        result_positive_peak_count_nEphys_mean.append(
+                            float(data_nEphys['Positive Peak Count'][index_in_nEphys]))
+                    else:
+                        result_positive_peak_count_nEphys_mean.append(0)
+                cluster.append(data_SRT_nEphys_Coordinates['Cluster'][cor])
+                barcodes.append(data_SRT_nEphys_Coordinates['Barcodes'][cor])
+                nEphys_coordinate.append(related_delay_cor)
+                result_positive_peak_count_nEphys.append(np.mean([i for i in result_positive_peak_count_nEphys_mean if i == i]))
+
+        for cor in range(len(data_SRT_nEphys_Coordinates['Barcodes'])):  #####Negative Peak Count
+            related_negative_peak_count_cor = literal_eval(data_SRT_nEphys_Coordinates['Coordinates in nEphys'][cor])
+            if len(related_negative_peak_count_cor) > 0:
+                result_negative_peak_count_nEphys_mean = []
+                for cor_in_nEphys in related_negative_peak_count_cor:
+                    if cor_in_nEphys in list(coordinate_nEphys):
+                        index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
+                        result_negative_peak_count_nEphys_mean.append(
+                            float(data_nEphys['Negative Peak Count'][index_in_nEphys]))
+                    else:
+                        result_negative_peak_count_nEphys_mean.append(0)
+                cluster.append(data_SRT_nEphys_Coordinates['Cluster'][cor])
+                barcodes.append(data_SRT_nEphys_Coordinates['Barcodes'][cor])
+                nEphys_coordinate.append(related_delay_cor)
+                result_negative_peak_count_nEphys.append(np.mean([i for i in result_negative_peak_count_nEphys_mean if i == i]))
+
+        for cor in range(len(data_SRT_nEphys_Coordinates['Barcodes'])): #####CT
+            related_CT_cor = literal_eval(data_SRT_nEphys_Coordinates['Coordinates in nEphys'][cor])
+            if len(related_CT_cor) > 0:
+                result_CT_nEphys_mean = []
+                for cor_in_nEphys in related_CT_cor:
+                    if cor_in_nEphys in list(coordinate_nEphys):
+                        index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
+                        result_CT_nEphys_mean.append(float(data_nEphys['CT'][index_in_nEphys]))
+                    else:
+                        result_CT_nEphys_mean.append(0)
+                cluster.append(data_SRT_nEphys_Coordinates['Cluster'][cor])
+                barcodes.append(data_SRT_nEphys_Coordinates['Barcodes'][cor])
+                nEphys_coordinate.append(related_delay_cor)
+                result_CT_nEphys.append(np.mean([i for i in result_CT_nEphys_mean if i == i]))
+
+        for cor in range(len(data_SRT_nEphys_Coordinates['Barcodes'])): #####CV2
+            related_CV2_cor = literal_eval(data_SRT_nEphys_Coordinates['Coordinates in nEphys'][cor])
+            if len(related_CV2_cor) > 0:
+                result_CV2_nEphys_mean = []
+                for cor_in_nEphys in related_CV2_cor:
+                    if cor_in_nEphys in list(coordinate_nEphys):
+                        index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
+                        result_CV2_nEphys_mean.append(float(data_nEphys['CV2'][index_in_nEphys]))
+                    else:
+                        result_CV2_nEphys_mean.append(0)
+                cluster.append(data_SRT_nEphys_Coordinates['Cluster'][cor])
+                barcodes.append(data_SRT_nEphys_Coordinates['Barcodes'][cor])
+                nEphys_coordinate.append(related_delay_cor)
+                result_CV2_nEphys.append(np.mean([i for i in result_CV2_nEphys_mean if i == i]))
+
+        for cor in range(len(data_SRT_nEphys_Coordinates['Barcodes'])): #####Fano
+            related_Fano_cor = literal_eval(data_SRT_nEphys_Coordinates['Coordinates in nEphys'][cor])
+            if len(related_Fano_cor) > 0:
+                result_Fano_nEphys_mean = []
+                for cor_in_nEphys in related_Fano_cor:
+                    if cor_in_nEphys in list(coordinate_nEphys):
+                        index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
+                        result_Fano_nEphys_mean.append(float(data_nEphys['Fano Factor'][index_in_nEphys]))
+                    else:
+                        result_Fano_nEphys_mean.append(0)
+                cluster.append(data_SRT_nEphys_Coordinates['Cluster'][cor])
+                barcodes.append(data_SRT_nEphys_Coordinates['Barcodes'][cor])
+                nEphys_coordinate.append(related_delay_cor)
+                result_Fano_nEphys.append(np.mean([i for i in result_Fano_nEphys_mean if i == i]))
+
+        a = {'Barcodes': barcodes, 'Coordinates in nEphys': nEphys_coordinate, 'LFPRate nEphys': result_Lfprate_nEphys, 'Delay nEphys': result_delay_nEphys, 'Energy nEphys': result_energy_nEphys,
+             'Frequency nEphys': result_frequency_nEphys,'Amplitude nEphys': result_amplitude_nEphys, 'Positive Peaks nEphys': result_positive_peaks_nEphys, 'Negative Peaks nEphys': result_negative_peaks_nEphys,
+             'Positive Peak Count nEphys': result_positive_peak_count_nEphys, 'Negative Peak Count nEphys': result_negative_peak_count_nEphys, 'CT nEphys': result_CT_nEphys, 'CV2 nEphys': result_CV2_nEphys, 'Fano nEphys': result_Fano_nEphys, 'Cluster': cluster}
+        df = pd.DataFrame.from_dict(a, orient='index').T
+        df.to_excel(self.srcfilepath + 'SRT_nEphys_Multiscale_Coordinates_for_network_activity_features' + ".xlsx", index=False)
+
+
 
     def gene_expression_network_activity_features_correlation(self, gene_list_name=None, network_activity_feature='LFPRate'):
         """
@@ -692,51 +942,53 @@ class MEASeqX_Project:
                             lfp_rate_mean = []
                             delay_mean = []
                             energy_mean = []
-                            CV2_mean = []
-                            Fano_mean = []
+                            frequency_mean = []
+                            amplitude_mean = []
                             positive_peaks_mean = []
                             negative_peaks_mean = []
                             positive_peak_count_mean = []
                             negative_peak_count_mean = []
                             CT_mean = []
-                            amplitude_mean = []
-                            frequency_mean = []
+                            CV2_mean = []
+                            Fano_mean = []
+
                             for cor_in_nEphys in related_LFP_cor:
                                 if cor_in_nEphys in list(coordinate_nEphys):
                                     index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
                                     lfp_rate_mean.append(float(data_nEphys['LFP Rate(Event/min)'][index_in_nEphys]))
                                     delay_mean.append(float(data_nEphys['Delay(s)'][index_in_nEphys]))
                                     energy_mean.append(float(data_nEphys['Energy'][index_in_nEphys]))
+                                    frequency_mean.append(float(data_nEphys['Frequency'][index_in_nEphys]))
+                                    amplitude_mean.append(float(data_nEphys['Amplitude(uV)'][index_in_nEphys]))
+                                    positive_peaks_mean.append(
+                                        float(data_nEphys['Mean Positive Peaks(uV)'][index_in_nEphys]))
+                                    negative_peaks_mean.append(
+                                        float(data_nEphys['Mean Negative Peaks(uV)'][index_in_nEphys]))
+                                    if abs(float(data_nEphys['Mean Positive Peaks(uV)'][index_in_nEphys])) >= abs(
+                                            float(data_nEphys['Mean Negative Peaks(uV)'][index_in_nEphys])):
+                                        amplitude_mean.append(float(data_nEphys['Mean Positive Peaks(uV)'][index_in_nEphys]))
+                                    else:
+                                        amplitude_mean.append(float(data_nEphys['Mean Negative Peaks(uV)'][index_in_nEphys]))
+                                    positive_peak_count_mean.append(
+                                        float(data_nEphys['Positive Peak Count'][index_in_nEphys]))
+                                    negative_peak_count_mean.append(
+                                        float(data_nEphys['Negative Peak Count'][index_in_nEphys]))
+                                    CT_mean.append(float(data_nEphys['CT'][index_in_nEphys]))
                                     CV2_mean.append(float(data_nEphys['CV2'][index_in_nEphys]))
                                     Fano_mean.append(float(data_nEphys['Fano Factor'][index_in_nEphys]))
-                                    frequency_mean.append(float(data_nEphys['Frequency'][index_in_nEphys]))
-                                    positive_peaks_mean.append(
-                                        float(data_nEphys['max positive peaks(uA)'][index_in_nEphys]))
-                                    negative_peaks_mean.append(
-                                        float(data_nEphys['max negative peaks(uA)'][index_in_nEphys]))
-                                    if abs(float(data_nEphys['max positive peaks(uA)'][index_in_nEphys])) >= abs(
-                                            float(data_nEphys['max negative peaks(uA)'][index_in_nEphys])):
-                                        amplitude_mean.append(float(data_nEphys['max positive peaks(uA)'][index_in_nEphys]))
-                                    else:
-                                        amplitude_mean.append(float(data_nEphys['max negative peaks(uA)'][index_in_nEphys]))
-                                    positive_peak_count_mean.append(
-                                        float(data_nEphys['positive_peak_count'][index_in_nEphys]))
-                                    negative_peak_count_mean.append(
-                                        float(data_nEphys['negative_peak_count'][index_in_nEphys]))
-                                    CT_mean.append(float(data_nEphys['CT'][index_in_nEphys]))
                                 else:
                                     lfp_rate_mean.append(0)
                                     delay_mean.append(0)
                                     energy_mean.append(0)
-                                    CV2_mean.append(0)
-                                    Fano_mean.append(0)
                                     frequency_mean.append(0)
+                                    amplitude_mean.append(0)
                                     positive_peaks_mean.append(0)
                                     negative_peaks_mean.append(0)
-                                    amplitude_mean.append(0)
                                     positive_peak_count_mean.append(0)
                                     negative_peak_count_mean.append(0)
                                     CT_mean.append(0)
+                                    CV2_mean.append(0)
+                                    Fano_mean.append(0)
 
                             Gene_Name_all.append(gene)
                             LFP_all.append(np.mean([i for i in lfp_rate_mean if i == i]))
@@ -755,13 +1007,12 @@ class MEASeqX_Project:
                             frequency_all.append(np.mean([i for i in frequency_mean if i == i]))
 
             a = {'Barcode': Barcode_all, 'Channel Position in SRT': channel_position_all,
-                 'Coordinate in nEphys': nEphys_coordinate,
+                 'Coordinates in nEphys': nEphys_coordinate,
                  'Gene Expression Level(Norm)': [i for i in Gene_Expression_Level_all], 'LFP Rate(Event/min)': LFP_all,
-                 'Delay(s)': delay_all, 'Energy': energy_all, 'CV2': CV2_all, 'Fano Factor': Fano_all,
-                 'mean positive peaks(uA)': positive_peaks_all, 'mean negative peaks(uA)': negative_peaks_all,
-                 'Amplitude(uA)': amplitude_all,'Frequency': frequency_all,
-                 'positive_peak_count': positive_peak_count_all, 'negative_peak_count': negative_peak_count_all,
-                 'CT': CT_all, "Gene Name": Gene_Name_all,
+                 'Delay(s)': delay_all, 'Energy': energy_all, 'Frequency': frequency_all, 'Amplitude(uV)': amplitude_all,
+                 'Mean Positive Peaks(uV)': positive_peaks_all, 'Mean Negative Peaks(uV)': negative_peaks_all,
+                 'Positive Peak Count': positive_peak_count_all, 'Negative Peak Count': negative_peak_count_all,
+                 'CT': CT_all, 'CV2': CV2_all, 'Fano Factor': Fano_all, "Gene Name": Gene_Name_all,
                  "Cluster": Cluster_all}
             df = pd.DataFrame.from_dict(a, orient='index').T
             df.to_excel(desfilepath + gene_list_name + '_gene_expression_network_activity_features' + ".xlsx",
@@ -777,28 +1028,26 @@ class MEASeqX_Project:
             type_name = 'LFP Rate(Event/min)'
         elif network_activity_feature == 'Delay':
             type_name = 'Delay(s)'
-        elif network_activity_feature == 'CV2':
-            type_name = 'CV2'
-        elif network_activity_feature == 'Fano':
-            type_name = 'Fano Factor'
-        elif network_activity_feature == 'Fano':
-            type_name = 'Fano Factor'
-        elif network_activity_feature == 'mean positive peaks':
-            type_name = 'mean positive peaks(uA)'
-        elif network_activity_feature == 'mean negative peaks':
-            type_name = 'mean negative peaks(uA)'
-        elif network_activity_feature == 'Amplitude':
-            type_name = 'Amplitude(uA)'
-        elif network_activity_feature == 'positive_peak_count':
-            type_name = 'positive_peak_count'
-        elif network_activity_feature == 'negative_peak_count':
-            type_name = 'negative_peak_count'
-        elif network_activity_feature == 'CT':
-            type_name = 'CT'
+        elif network_activity_feature == 'Energy':
+            type_name = 'Energy'
         elif network_activity_feature == 'Frequency':
             type_name = 'Frequency'
+        elif network_activity_feature == 'Amplitude':
+            type_name = 'Amplitude(uV)'
+        elif network_activity_feature == 'positive_peaks':
+            type_name = 'Mean Positive Peaks(uV)'
+        elif network_activity_feature == 'negative_peaks':
+            type_name = 'Mean Negative Peaks(uV)'
+        elif network_activity_feature == 'positive_peak_count':
+            type_name = 'Positive Peak Count'
+        elif network_activity_feature == 'negative_peak_count':
+            type_name = 'Negative Peak Count'
+        elif network_activity_feature == 'CT':
+            type_name = 'CT'
+        elif network_activity_feature == 'CV2':
+            type_name = 'CV2'
         else:
-            type_name = 'Energy'
+            type_name = 'Fano Factor'
 
         k = 0
         # print(gene_name_list)
@@ -879,28 +1128,26 @@ class MEASeqX_Project:
             type_name = 'LFP Rate(Event/min)'
         elif network_activity_feature == 'Delay':
             type_name = 'Delay(s)'
-        elif network_activity_feature == 'CV2':
-            type_name = 'CV2'
-        elif network_activity_feature == 'Fano':
-            type_name = 'Fano Factor'
-        elif network_activity_feature == 'Fano':
-            type_name = 'Fano Factor'
-        elif network_activity_feature == 'mean positive peaks':
-            type_name = 'mean positive peaks(uA)'
-        elif network_activity_feature == 'mean negative peaks':
-            type_name = 'mean negative peaks(uA)'
-        elif network_activity_feature == 'Amplitude':
-            type_name = 'Amplitude(uA)'
-        elif network_activity_feature == 'positive_peak_count':
-            type_name = 'positive_peak_count'
-        elif network_activity_feature == 'negative_peak_count':
-            type_name = 'negative_peak_count'
-        elif network_activity_feature == 'CT':
-            type_name = 'CT'
+        elif network_activity_feature == 'Energy':
+            type_name = 'Energy'
         elif network_activity_feature == 'Frequency':
             type_name = 'Frequency'
+        elif network_activity_feature == 'Amplitude':
+            type_name = 'Amplitude(uV)'
+        elif network_activity_feature == 'positive_peaks':
+            type_name = 'Mean Positive Peaks(uV)'
+        elif network_activity_feature == 'negative_peaks':
+            type_name = 'Mean Negative Peaks(uV)'
+        elif network_activity_feature == 'positive_peak_count':
+            type_name = 'Positive Peak Count'
+        elif network_activity_feature == 'negative_peak_count':
+            type_name = 'Negative Peak Count'
+        elif network_activity_feature == 'CT':
+            type_name = 'CT'
+        elif network_activity_feature == 'CV2':
+            type_name = 'CV2'
         else:
-            type_name = 'Energy'
+            type_name = 'Fano Factor'
         if os.path.exists(
                 self.srcfilepath + gene_list_name + "_gene_expression_network_activity_feature" + '_' + network_activity_feature + ".xlsx"):
             df_LFP_Rate_all = pd.read_excel(
@@ -1014,7 +1261,7 @@ class MEASeqX_Project:
                 # B = [B[i] for i in id_nan]
                 if len(A) > 0:
                     # final = final.drop([i for i in range(len(A)) if np.isnan(A[i])], axis=0)
-                    ##############################gene expression value denosing
+                    ##############################gene expression value denoising
                     mean_B, low_threshold_B, high_threshold_B = self.quantile_bound(B)
                     # keep_B_id = [i for i in range(len(B)) if B[i] <= high_threshold_B]
                     # B = [B[i] for i in keep_B_id]
@@ -1103,7 +1350,7 @@ class MEASeqX_Project:
                     # B_clu = [B_clu[i] for i in id_nan]
                     if len(A_clu) > 0:
                         # final_clu = final_clu.drop([i for i in range(len(A_clu)) if np.isnan(A_clu[i])], axis=0)
-                        ##############################gene expression value denosing
+                        ##############################gene expression value denoising
                         # mean_B, low_threshold_B, high_threshold_B = self.quantile_bound(B_clu)
                         # keep_B_id = [i for i in range(len(B_clu)) if B_clu[i] <= high_threshold_B]
                         # B_clu = [B_clu[i] for i in keep_B_id]
@@ -1203,32 +1450,32 @@ class MEASeqX_Project:
         writer = pd.ExcelWriter(desfilepath + gene_list_name + '_gene_expression_network_activity_feature_per_region_pooled'+'.xlsx',engine='xlsxwriter')
         type_count = 0
         for type in list(network_activity_feature):
+            print(type)
             if type == 'LFPRate':  ##network_activity_feature = 'LFPRate','Delay','Energy'
                 type_name = 'LFP Rate(Event/min)'
             elif type == 'Delay':
                 type_name = 'Delay(s)'
-            elif type == 'CV2':
-                type_name = 'CV2'
-            elif type == 'Fano':
-                type_name = 'Fano Factor'
-            elif type == 'Fano':
-                type_name = 'Fano Factor'
-            elif type == 'mean positive peaks':
-                type_name = 'mean positive peaks(uA)'
-            elif type == 'mean negative peaks':
-                type_name = 'mean negative peaks(uA)'
-            elif type == 'Amplitude':
-                type_name = 'Amplitude(uA)'
-            elif type == 'positive_peak_count':
-                type_name = 'positive_peak_count'
-            elif type == 'negative_peak_count':
-                type_name = 'negative_peak_count'
-            elif type == 'CT':
-                type_name = 'CT'
+            elif type == 'Energy':
+                type_name = 'Energy'
             elif type == 'Frequency':
                 type_name = 'Frequency'
+            elif type == 'Amplitude':
+                type_name = 'Amplitude(uV)'
+            elif type == 'positive_peaks':
+                type_name = 'Mean Positive Peaks(uV)'
+            elif type == 'negative_peaks':
+                type_name = 'Mean Negative Peaks(uV)'
+            elif type == 'positive_peak_count':
+                type_name = 'Positive Peak Count'
+            elif type == 'negative_peak_count':
+                type_name = 'Negative Peak Count'
+            elif type == 'CT':
+                type_name = 'CT'
+            elif type == 'CV2':
+                type_name = 'CV2'
             else:
-                type_name = 'Energy'
+                type_name = 'Fano Factor'
+            print('A',type_name)
             df_LFP_Rate_all = pd.read_excel(desfilepath + gene_list_name + "_gene_expression_network_activity_feature_per_cluster_pooled" + '_' + type + ".xlsx")
             con_count = 0
             for con in conditions:
@@ -1249,7 +1496,8 @@ class MEASeqX_Project:
                 final = pd.concat([df_new_con, df_add], axis=1)
                 # final.fillna(0)
 
-                ##############################gene expression value denosing
+                ##############################gene expression value denoising
+                print(final.columns)
                 A = list(final[type_name])
 
                 final_filter = final
@@ -1271,7 +1519,7 @@ class MEASeqX_Project:
                         df_new_Region = df_new_Region[df_new_Region['Region'] == region]
                         s = pd.Series(range(len(df_new_Region)))
                         df_new_Region = df_new_Region.set_index(s)
-                        ##############################gene expression value denosing
+                        ##############################gene expression value denoising
                         A = list(df_new_Region[type_name])
                         B = list(df_new_Region['Gene Expression Level'])
                         mean_B, low_threshold_B, high_threshold_B = self.quantile_bound(B)
@@ -1756,13 +2004,15 @@ class MEASeqX_Project:
                 LFP_all = []
                 delay_all = []
                 energy_all = []
+                frequency_all = []
+                amplitude_all = []
                 positive_peaks_all = []
                 negative_peaks_all = []
                 positive_peak_count_all = []
                 negative_peak_count_all = []
                 CT_all = []
-                amplitude_all = []
-                frequency_all = []
+                CV2_all = []
+                Fano_all = []
 
                 for cor in range(len(Gene_last)):
                     index_in_correlation = list(Barcode).index(Gene_last[cor])
@@ -1770,13 +2020,15 @@ class MEASeqX_Project:
                     lfp_rate_mean = []
                     delay_mean = []
                     energy_mean = []
+                    frequency_mean = []
+                    amplitude_mean = []
                     positive_peaks_mean = []
                     negative_peaks_mean = []
                     positive_peak_count_mean = []
                     negative_peak_count_mean = []
                     CT_mean = []
-                    amplitude_mean = []
-                    frequency_mean = []
+                    CV2_mean = []
+                    Fano_mean = []
                     for cor_in_nEphys in related_LFP_cor:
                         if cor_in_nEphys in list(coordinate_nEphys):
                             index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
@@ -1784,48 +2036,53 @@ class MEASeqX_Project:
                             delay_mean.append(float(data_nEphys['Delay(s)'][index_in_nEphys]))
                             energy_mean.append(float(data_nEphys['Energy'][index_in_nEphys]))
                             frequency_mean.append(float(data_nEphys['Frequency'][index_in_nEphys]))
+                            amplitude_mean.append(float(data_nEphys['Amplitude(uV)'][index_in_nEphys]))
                             positive_peaks_mean.append(
-                                float(data_nEphys['max positive peaks(uA)'][index_in_nEphys]))
+                                float(data_nEphys['Mean Positive Peaks(uV)'][index_in_nEphys]))
                             negative_peaks_mean.append(
-                                float(data_nEphys['max negative peaks(uA)'][index_in_nEphys]))
-                            if abs(float(data_nEphys['max positive peaks(uA)'][index_in_nEphys])) >= abs(
-                                    float(data_nEphys['max negative peaks(uA)'][index_in_nEphys])):
-                                amplitude_mean.append(float(data_nEphys['max positive peaks(uA)'][index_in_nEphys]))
+                                float(data_nEphys['Mean Negative Peaks(uV)'][index_in_nEphys]))
+                            if abs(float(data_nEphys['Mean Positive Peaks(uV)'][index_in_nEphys])) >= abs(
+                                    float(data_nEphys['Mean Negative Peaks(uV)'][index_in_nEphys])):
+                                amplitude_mean.append(float(data_nEphys['Mean Positive Peaks(uV)'][index_in_nEphys]))
                             else:
-                                amplitude_mean.append(float(data_nEphys['max negative peaks(uA)'][index_in_nEphys]))
+                                amplitude_mean.append(float(data_nEphys['Mean Negative Peaks(uV)'][index_in_nEphys]))
                             positive_peak_count_mean.append(
-                                float(data_nEphys['positive_peak_count'][index_in_nEphys]))
+                                float(data_nEphys['Positive Peak Count'][index_in_nEphys]))
                             negative_peak_count_mean.append(
-                                float(data_nEphys['negative_peak_count'][index_in_nEphys]))
+                                float(data_nEphys['Negative Peak Count'][index_in_nEphys]))
                             CT_mean.append(float(data_nEphys['CT'][index_in_nEphys]))
+                            CV2_mean.append(float(data_nEphys['CV2'][index_in_nEphys]))
+                            Fano_mean.append(float(data_nEphys['Fano Factor'][index_in_nEphys]))
+
                         else:
                             lfp_rate_mean.append(0)
                             delay_mean.append(0)
                             energy_mean.append(0)
                             frequency_mean.append(0)
+                            amplitude_mean.append(0)
                             positive_peaks_mean.append(0)
                             negative_peaks_mean.append(0)
-                            amplitude_mean.append(0)
                             positive_peak_count_mean.append(0)
                             negative_peak_count_mean.append(0)
                             CT_mean.append(0)
+                            CV2_mean.append(0)
+                            Fano_mean.append(0)
 
                     LFP_all.append(np.mean([i if i == i else 0 for i in lfp_rate_mean]))
                     delay_all.append(np.mean([i if i == i else 0 for i in delay_mean]))
                     energy_all.append(np.mean([i if i == i else 0 for i in energy_mean]))
+                    frequency_all.append(np.mean([i if i == i else 0 for i in frequency_mean]))
+                    amplitude_all.append(np.mean([i if i == i else 0 for i in amplitude_mean]))
                     positive_peaks_all.append(np.mean([i if i == i else 0 for i in positive_peaks_mean]))
                     negative_peaks_all.append(np.mean([i if i == i else 0 for i in negative_peaks_mean]))
                     positive_peak_count_all.append(np.mean([i if i == i else 0 for i in positive_peak_count_mean]))
                     negative_peak_count_all.append(np.mean([i if i == i else 0 for i in negative_peak_count_mean]))
                     CT_all.append(np.mean([i if i == i else 0 for i in CT_mean]))
-                    amplitude_all.append(np.mean([i if i == i else 0 for i in amplitude_mean]))
-                    frequency_all.append(np.mean([i if i == i else 0 for i in frequency_mean]))
-                    ################################
+                    CV2_all.append(np.mean([i if i == i else 0 for i in CV2_mean]))
+                    Fano_all.append(np.mean([i if i == i else 0 for i in Fano_mean]))
 
-
+                ################################
                 corr_LFP,p_LFP = self.relation_p_values(varx=gene_expression_list, vary=LFP_all)
-                # network_activity_feature = ['Delay', 'Energy', 'mean positive peaks', 'mean negative peaks', 'Amplitude',
-                #                'positive_peak_count', 'negative_peak_count', 'CT', 'Frequency']
                 Gene_Name_all.append(gene)
                 Parameters_all.append('LFPRate')
                 Cluster_all.append(clu)
@@ -1835,10 +2092,8 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-                ####################################################
+                ################################
                 corr_delay, p_delay = self.relation_p_values(varx=gene_expression_list, vary=delay_all)
-                # network_activity_feature = ['Energy', 'mean positive peaks', 'mean negative peaks', 'Amplitude',
-                #                'positive_peak_count', 'negative_peak_count', 'CT', 'Frequency']
                 Gene_Name_all.append(gene)
                 Parameters_all.append('Delay')
                 Cluster_all.append(clu)
@@ -1848,10 +2103,8 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-
+                ################################
                 corr_energy, p_energy = self.relation_p_values(varx=gene_expression_list, vary=energy_all)
-                # network_activity_feature = ['mean positive peaks', 'mean negative peaks', 'Amplitude',
-                #                'positive_peak_count', 'negative_peak_count', 'CT', 'Frequency']
                 Gene_Name_all.append(gene)
                 Parameters_all.append('Energy')
                 Cluster_all.append(clu)
@@ -1861,10 +2114,32 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-
+                ################################
+                corr_frequency, p_frequency = self.relation_p_values(varx=gene_expression_list, vary=frequency_all)
+                Gene_Name_all.append(gene)
+                Parameters_all.append('Frequency')
+                Cluster_all.append(clu)
+                Correlation_all.append(corr_frequency)
+                p_values_all.append(p_frequency)
+                File_name_all.append(expFile[:-4])
+                for con_name in conditions:
+                    if con_name in expFile[:-4]:
+                        Condition_all.append(con_name)
+                ################################
+                corr_amplitude, p_amplitude = self.relation_p_values(varx=gene_expression_list, vary=amplitude_all)
+                Gene_Name_all.append(gene)
+                Parameters_all.append('Amplitude')
+                Cluster_all.append(clu)
+                Correlation_all.append(corr_amplitude)
+                p_values_all.append(p_amplitude)
+                File_name_all.append(expFile[:-4])
+                for con_name in conditions:
+                    if con_name in expFile[:-4]:
+                        Condition_all.append(con_name)
+                ################################
                 corr_positive_peaks, p_positive_peaks = self.relation_p_values(varx=gene_expression_list, vary=positive_peaks_all)
                 Gene_Name_all.append(gene)
-                Parameters_all.append('mean positive peaks')
+                Parameters_all.append('positive peaks')
                 Cluster_all.append(clu)
                 Correlation_all.append(corr_positive_peaks)
                 p_values_all.append(p_positive_peaks)
@@ -1872,12 +2147,10 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-                corr_negative_peaks, p_negative_peaks = self.relation_p_values(varx=gene_expression_list,
-                                                                               vary=negative_peaks_all)
-                # network_activity_feature = ['Amplitude',
-                #                'positive_peak_count', 'negative_peak_count', 'CT', 'Frequency']
+                ################################
+                corr_negative_peaks, p_negative_peaks = self.relation_p_values(varx=gene_expression_list, vary=negative_peaks_all)
                 Gene_Name_all.append(gene)
-                Parameters_all.append('mean negative peaks')
+                Parameters_all.append('negative peaks')
                 Cluster_all.append(clu)
                 Correlation_all.append(corr_negative_peaks)
                 p_values_all.append(p_negative_peaks)
@@ -1885,12 +2158,8 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-
-
-
-                corr_positive_peak_count, p_positive_peak_count = self.relation_p_values(varx=gene_expression_list,
-                                                                               vary=positive_peak_count_all)
-                # network_activity_feature = ['Amplitude', 'negative_peak_count', 'CT', 'Frequency']
+                ################################
+                corr_positive_peak_count, p_positive_peak_count = self.relation_p_values(varx=gene_expression_list,vary=positive_peak_count_all)
                 Gene_Name_all.append(gene)
                 Parameters_all.append('positive_peak_count')
                 Cluster_all.append(clu)
@@ -1900,11 +2169,8 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-
-                corr_negative_peak_count, p_negative_peak_count = self.relation_p_values(varx=gene_expression_list,
-                                                                                         vary=negative_peak_count_all)
-
-                # network_activity_feature = ['Amplitude', 'CT', 'Frequency']
+                ################################
+                corr_negative_peak_count, p_negative_peak_count = self.relation_p_values(varx=gene_expression_list, vary=negative_peak_count_all)
                 Gene_Name_all.append(gene)
                 Parameters_all.append('negative_peak_count')
                 Cluster_all.append(clu)
@@ -1914,6 +2180,7 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
+                ################################
                 corr_CT, p_CT = self.relation_p_values(varx=gene_expression_list,vary=CT_all)
                 # network_activity_feature = ['Amplitude', 'Frequency']
                 Gene_Name_all.append(gene)
@@ -1925,31 +2192,29 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-
-                corr_amplitude, p_amplitude = self.relation_p_values(varx=gene_expression_list, vary=amplitude_all)
-                # network_activity_feature = [, 'Frequency']
+                ################################
+                corr_CV2, p_CV2 = self.relation_p_values(varx=gene_expression_list, vary=CV2_all)
                 Gene_Name_all.append(gene)
-                Parameters_all.append('Amplitude')
+                Parameters_all.append('CV2')
                 Cluster_all.append(clu)
-                Correlation_all.append(corr_amplitude)
-                p_values_all.append(p_amplitude)
+                Correlation_all.append(corr_CV2)
+                p_values_all.append(p_CV2)
+                File_name_all.append(expFile[:-4])
+                for con_name in conditions:
+                    if con_name in expFile[:-4]:
+                        Condition_all.append(con_name)
+                ################################
+                corr_Fano, p_Fano = self.relation_p_values(varx=gene_expression_list, vary=Fano_all)
+                Gene_Name_all.append(gene)
+                Parameters_all.append('Fano')
+                Cluster_all.append(clu)
+                Correlation_all.append(corr_Fano)
+                p_values_all.append(p_Fano)
                 File_name_all.append(expFile[:-4])
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
 
-
-
-                corr_frequency, p_frequency = self.relation_p_values(varx=gene_expression_list, vary=frequency_all)
-                Gene_Name_all.append(gene)
-                Parameters_all.append('Frequency')
-                Cluster_all.append(clu)
-                Correlation_all.append(corr_frequency)
-                p_values_all.append(p_frequency)
-                File_name_all.append(expFile[:-4])
-                for con_name in conditions:
-                    if con_name in expFile[:-4]:
-                        Condition_all.append(con_name)
         a = {'Gene Name': Gene_Name_all, 'Parameters': Parameters_all,'Correlation': Correlation_all,
              'p_values': p_values_all,
              "Cluster": Cluster_all,'File name':File_name_all,'Condition':Condition_all}
@@ -2035,13 +2300,15 @@ class MEASeqX_Project:
                 LFP_all = []
                 delay_all = []
                 energy_all = []
+                frequency_all = []
+                amplitude_all = []
                 positive_peaks_all = []
                 negative_peaks_all = []
                 positive_peak_count_all = []
                 negative_peak_count_all = []
                 CT_all = []
-                amplitude_all = []
-                frequency_all = []
+                CV2_all = []
+                Fano_all = []
 
                 for cor in range(len(Gene_last)):
                     index_in_correlation = list(Barcode).index(Gene_last[cor])
@@ -2049,13 +2316,15 @@ class MEASeqX_Project:
                     lfp_rate_mean = []
                     delay_mean = []
                     energy_mean = []
+                    frequency_mean = []
+                    amplitude_mean = []
                     positive_peaks_mean = []
                     negative_peaks_mean = []
                     positive_peak_count_mean = []
                     negative_peak_count_mean = []
                     CT_mean = []
-                    amplitude_mean = []
-                    frequency_mean = []
+                    CV2_mean = []
+                    Fano_mean = []
                     for cor_in_nEphys in related_LFP_cor:
                         if cor_in_nEphys in list(coordinate_nEphys):
                             index_in_nEphys = list(coordinate_nEphys).index(cor_in_nEphys)
@@ -2063,42 +2332,50 @@ class MEASeqX_Project:
                             delay_mean.append(float(data_nEphys['Delay(s)'][index_in_nEphys]))
                             energy_mean.append(float(data_nEphys['Energy'][index_in_nEphys]))
                             frequency_mean.append(float(data_nEphys['Frequency'][index_in_nEphys]))
+                            amplitude_mean.append(float(data_nEphys['Amplitude(uV)'][index_in_nEphys]))
                             positive_peaks_mean.append(
-                                float(data_nEphys['max positive peaks(uA)'][index_in_nEphys]))
+                                float(data_nEphys['Mean Positive Peaks(uV)'][index_in_nEphys]))
                             negative_peaks_mean.append(
-                                float(data_nEphys['max negative peaks(uA)'][index_in_nEphys]))
-                            if abs(float(data_nEphys['max positive peaks(uA)'][index_in_nEphys])) >= abs(
-                                    float(data_nEphys['max negative peaks(uA)'][index_in_nEphys])):
-                                amplitude_mean.append(float(data_nEphys['max positive peaks(uA)'][index_in_nEphys]))
+                                float(data_nEphys['Mean Negative Peaks(uV)'][index_in_nEphys]))
+                            if abs(float(data_nEphys['Mean Positive Peaks(uV)'][index_in_nEphys])) >= abs(
+                                    float(data_nEphys['Mean Negative Peaks(uV)'][index_in_nEphys])):
+                                amplitude_mean.append(float(data_nEphys['Mean Positive Peaks(uV)'][index_in_nEphys]))
                             else:
-                                amplitude_mean.append(float(data_nEphys['max negative peaks(uA)'][index_in_nEphys]))
+                                amplitude_mean.append(float(data_nEphys['Mean Negative Peaks(uV)'][index_in_nEphys]))
                             positive_peak_count_mean.append(
-                                float(data_nEphys['positive_peak_count'][index_in_nEphys]))
+                                float(data_nEphys['Positive Peak Count'][index_in_nEphys]))
                             negative_peak_count_mean.append(
-                                float(data_nEphys['negative_peak_count'][index_in_nEphys]))
+                                float(data_nEphys['Negative Peak Count'][index_in_nEphys]))
                             CT_mean.append(float(data_nEphys['CT'][index_in_nEphys]))
+                            CV2_mean.append(float(data_nEphys['CV2'][index_in_nEphys]))
+                            Fano_mean.append(float(data_nEphys['Fano Factor'][index_in_nEphys]))
+
                         else:
                             lfp_rate_mean.append(0)
                             delay_mean.append(0)
                             energy_mean.append(0)
                             frequency_mean.append(0)
+                            amplitude_mean.append(0)
                             positive_peaks_mean.append(0)
                             negative_peaks_mean.append(0)
-                            amplitude_mean.append(0)
                             positive_peak_count_mean.append(0)
                             negative_peak_count_mean.append(0)
                             CT_mean.append(0)
+                            CV2_mean.append(0)
+                            Fano_mean.append(0)
 
                     LFP_all.append(np.mean([i if i == i else 0 for i in lfp_rate_mean]))
                     delay_all.append(np.mean([i if i == i else 0 for i in delay_mean]))
                     energy_all.append(np.mean([i if i == i else 0 for i in energy_mean]))
+                    frequency_all.append(np.mean([i if i == i else 0 for i in frequency_mean]))
+                    amplitude_all.append(np.mean([i if i == i else 0 for i in amplitude_mean]))
                     positive_peaks_all.append(np.mean([i if i == i else 0 for i in positive_peaks_mean]))
                     negative_peaks_all.append(np.mean([i if i == i else 0 for i in negative_peaks_mean]))
                     positive_peak_count_all.append(np.mean([i if i == i else 0 for i in positive_peak_count_mean]))
                     negative_peak_count_all.append(np.mean([i if i == i else 0 for i in negative_peak_count_mean]))
                     CT_all.append(np.mean([i if i == i else 0 for i in CT_mean]))
-                    amplitude_all.append(np.mean([i if i == i else 0 for i in amplitude_mean]))
-                    frequency_all.append(np.mean([i if i == i else 0 for i in frequency_mean]))
+                    CV2_all.append(np.mean([i if i == i else 0 for i in CV2_mean]))
+                    Fano_all.append(np.mean([i if i == i else 0 for i in Fano_mean]))
                     # ################################
                 corr_LFP, p_LFP = self.relation_p_values(varx=gene_expression_list, vary=LFP_all)
                 Gene_Name_all.append(gene)
@@ -2110,7 +2387,7 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-
+                ################################
                 corr_delay, p_delay = self.relation_p_values(varx=gene_expression_list, vary=delay_all)
                 Gene_Name_all.append(gene)
                 Parameters_all.append('Delay')
@@ -2121,7 +2398,7 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-
+                ################################
                 corr_energy, p_energy = self.relation_p_values(varx=gene_expression_list, vary=energy_all)
                 Gene_Name_all.append(gene)
                 Parameters_all.append('Energy')
@@ -2132,29 +2409,18 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-
-                corr_positive_peaks, p_positive_peaks = self.relation_p_values(varx=gene_expression_list, vary=positive_peaks_all)
+                ################################
+                corr_frequency, p_frequency = self.relation_p_values(varx=gene_expression_list, vary=frequency_all)
                 Gene_Name_all.append(gene)
-                Parameters_all.append('mean positive peaks')
+                Parameters_all.append('Frequency')
                 Cluster_all.append(clu)
-                Correlation_all.append(corr_positive_peaks)
-                p_values_all.append(p_positive_peaks)
+                Correlation_all.append(corr_frequency)
+                p_values_all.append(p_frequency)
                 File_name_all.append(expFile[:-4])
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-
-                corr_negative_peaks, p_negative_peaks = self.relation_p_values(varx=gene_expression_list, vary=negative_peaks_all)
-                Gene_Name_all.append(gene)
-                Parameters_all.append('mean negative peaks')
-                Cluster_all.append(clu)
-                Correlation_all.append(corr_negative_peaks)
-                p_values_all.append(p_negative_peaks)
-                File_name_all.append(expFile[:-4])
-                for con_name in conditions:
-                    if con_name in expFile[:-4]:
-                        Condition_all.append(con_name)
-
+                ################################
                 corr_amplitude, p_amplitude = self.relation_p_values(varx=gene_expression_list, vary=amplitude_all)
                 Gene_Name_all.append(gene)
                 Parameters_all.append('Amplitude')
@@ -2165,7 +2431,29 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-
+                ################################
+                corr_positive_peaks, p_positive_peaks = self.relation_p_values(varx=gene_expression_list, vary=positive_peaks_all)
+                Gene_Name_all.append(gene)
+                Parameters_all.append('positive peaks')
+                Cluster_all.append(clu)
+                Correlation_all.append(corr_positive_peaks)
+                p_values_all.append(p_positive_peaks)
+                File_name_all.append(expFile[:-4])
+                for con_name in conditions:
+                    if con_name in expFile[:-4]:
+                        Condition_all.append(con_name)
+                ################################
+                corr_negative_peaks, p_negative_peaks = self.relation_p_values(varx=gene_expression_list, vary=negative_peaks_all)
+                Gene_Name_all.append(gene)
+                Parameters_all.append('negative peaks')
+                Cluster_all.append(clu)
+                Correlation_all.append(corr_negative_peaks)
+                p_values_all.append(p_negative_peaks)
+                File_name_all.append(expFile[:-4])
+                for con_name in conditions:
+                    if con_name in expFile[:-4]:
+                        Condition_all.append(con_name)
+                ################################
                 corr_positive_peak_count, p_positive_peak_count = self.relation_p_values(varx=gene_expression_list, vary=positive_peak_count_all)
                 Gene_Name_all.append(gene)
                 Parameters_all.append('positive_peak_count')
@@ -2176,7 +2464,7 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-
+                ################################
                 corr_negative_peak_count, p_negative_peak_count = self.relation_p_values(varx=gene_expression_list,vary=negative_peak_count_all)
                 Gene_Name_all.append(gene)
                 Parameters_all.append('negative_peak_count')
@@ -2187,7 +2475,7 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-
+                ################################
                 corr_CT, p_CT = self.relation_p_values(varx=gene_expression_list,vary=CT_all)
                 Gene_Name_all.append(gene)
                 Parameters_all.append('CT')
@@ -2198,13 +2486,24 @@ class MEASeqX_Project:
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
                         Condition_all.append(con_name)
-
-                corr_frequency, p_frequency = self.relation_p_values(varx=gene_expression_list, vary=frequency_all)
+                ################################
+                corr_CV2, p_CV2 = self.relation_p_values(varx=gene_expression_list, vary=CV2_all)
                 Gene_Name_all.append(gene)
-                Parameters_all.append('Frequency')
+                Parameters_all.append('CV2')
                 Cluster_all.append(clu)
-                Correlation_all.append(corr_frequency)
-                p_values_all.append(p_frequency)
+                Correlation_all.append(corr_CV2)
+                p_values_all.append(p_CV2)
+                File_name_all.append(expFile[:-4])
+                for con_name in conditions:
+                    if con_name in expFile[:-4]:
+                        Condition_all.append(con_name)
+                ################################
+                corr_Fano, p_Fano = self.relation_p_values(varx=gene_expression_list, vary=Fano_all)
+                Gene_Name_all.append(gene)
+                Parameters_all.append('Fano')
+                Cluster_all.append(clu)
+                Correlation_all.append(corr_Fano)
+                p_values_all.append(p_Fano)
                 File_name_all.append(expFile[:-4])
                 for con_name in conditions:
                     if con_name in expFile[:-4]:
@@ -2533,28 +2832,26 @@ class MEASeqX_Project:
                 type_name = 'LFP Rate(Event/min)'
             elif Type_name == 'Delay':
                 type_name = 'Delay(s)'
-            elif Type_name == 'CV2':
-                type_name = 'CV2'
-            elif Type_name == 'Fano':
-                type_name = 'Fano Factor'
-            elif Type_name == 'Fano':
-                type_name = 'Fano Factor'
-            elif Type_name == 'mean positive peaks':
-                type_name = 'mean positive peaks(uA)'
-            elif Type_name == 'mean negative peaks':
-                type_name = 'mean negative peaks(uA)'
-            elif Type_name == 'Amplitude':
-                type_name = 'Amplitude(uA)'
-            elif Type_name == 'positive_peak_count':
-                type_name = 'positive_peak_count'
-            elif Type_name == 'negative_peak_count':
-                type_name = 'negative_peak_count'
-            elif Type_name == 'CT':
-                type_name = 'CT'
+            elif Type_name == 'Energy':
+                type_name = 'Energy'
             elif Type_name == 'Frequency':
                 type_name = 'Frequency'
+            elif Type_name == 'Amplitude':
+                type_name = 'Amplitude(uV)'
+            elif Type_name == 'positive_peaks':
+                type_name = 'Mean Positive Peaks(uV)'
+            elif Type_name == 'negative_peaks':
+                type_name = 'Mean Negative Peaks(uV)'
+            elif Type_name == 'positive_peak_count':
+                type_name = 'Positive Peak Count'
+            elif Type_name == 'negative_peak_count':
+                type_name = 'Negative Peak Count'
+            elif Type_name == 'CT':
+                type_name = 'CT'
+            elif Type_name == 'CV2':
+                type_name = 'CV2'
             else:
-                type_name = 'Energy'
+                type_name = 'Fano Factor'
 
             df_new = df.copy()
             df_new_Region = df_new.groupby(by=['Barcode'])[type_name].mean().reset_index()
@@ -2631,19 +2928,20 @@ if __name__ == '__main__':
     srcfilepath = r'Z:/ANALYSES/SPATIOSCALES- 10X genomics/Data/'  # main path
     Analysis = MEASeqX_Project(srcfilepath)
     Analysis.network_activity_features(low=1, high=100)  # Step 1 individual
+    Analysis.coordinates_for_network_activity_features() # Step 2 individual
     ################################################################# nEphys and SRT Network Activity Features Correlation Gene List
-    for gene_list in column_list: # Step 2 individual and pooled
+    for gene_list in column_list: # Step 3 individual and pooled
         for type_name in network_activity_feature:
             Analysis.gene_expression_network_activity_features_correlation(gene_list_name=gene_list,network_activity_feature = type_name) # individual
             Analysis.gene_expression_network_activity_features_correlation_pooled_statistics_per_cluster(gene_list_name=gene_list,network_activity_feature = type_name) # pooled condition statistics (main path should contain the condition subfolders)
         Analysis.gene_expression_network_activity_features_correlation_pooled_statistics_per_region(gene_list_name=gene_list,choose_gene = 'Bdnf') # pooled condition statistics (main path should contain the condition subfolders)
     ################################################################# nEphys and SRT Network Activity Features Correlation All Genes
-    Analysis.all_gene_expression()  # Step 2 individual
-    Analysis.all_gene_expression_without_filter() # Step 2 individual
-    Analysis.all_gene_expression_network_activity_features_correlation() #Step 3 individual
-    Analysis.all_gene_expression_network_activity_features_correlation_without_filter()  # Step 3 individual
-    Analysis.all_gene_expression_network_activity_features_correlation_pooled_statistics()  # Step 4 pooled condition statistics (main path should contain the condition subfolders)
-    Analysis.all_gene_expression_network_activity_features_correlation_pooled_statistics_without_filter()  # Step 4 pooled condition statistics (main path should contain the condition subfolders)
+    Analysis.all_gene_expression()  # Step 3 individual
+    Analysis.all_gene_expression_without_filter() # Step 3 individual
+    Analysis.all_gene_expression_network_activity_features_correlation() #Step 4 individual
+    Analysis.all_gene_expression_network_activity_features_correlation_without_filter()  # Step 4 individual
+    Analysis.all_gene_expression_network_activity_features_correlation_pooled_statistics()  # Step 5 pooled condition statistics (main path should contain the condition subfolders)
+    Analysis.all_gene_expression_network_activity_features_correlation_pooled_statistics_without_filter()  # Step 5 pooled condition statistics (main path should contain the condition subfolders)
 
     Analysis.biplot_for_gene_expression_electrophysiological_features(gene_list_name="IEGs", choose_gene=False, k_means_auto=False, num_clus=4, parameter_clusters_independent=False, cluster_based_on_structrue=True)
 

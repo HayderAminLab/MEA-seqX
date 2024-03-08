@@ -122,11 +122,11 @@ class LFPAnalysis_Function:
 
     def AnalyzeExp(self,expFile = None):
         """the denosing codes main function"""
-        if os.path.exists(self.srcfilepath + expFile[:-4] + '_denosed_LfpChIDs' + '.npy') and os.path.exists(
-                self.srcfilepath + expFile[:-4] + '_denosed_LfpTimes' + '.npy') and os.path.exists(self.srcfilepath + expFile[:-4] + '_denosed_LfpForms' + '.npy'):
-            lfpChId_last = np.load(self.srcfilepath + expFile[:-4] + '_denosed_LfpChIDs' + '.npy')
-            lfpTimes_last = np.load(self.srcfilepath + expFile[:-4] + '_denosed_LfpTimes' + '.npy')
-            LfpForms_last = np.load(self.srcfilepath + expFile[:-4] + '_denosed_LfpForms' + '.npy')
+        if os.path.exists(self.srcfilepath + expFile[:-4] + '_denoised_LfpChIDs' + '.npy') and os.path.exists(
+                self.srcfilepath + expFile[:-4] + '_denoised_LfpTimes' + '.npy') and os.path.exists(self.srcfilepath + expFile[:-4] + '_denoised_LfpForms' + '.npy'):
+            lfpChId_last = np.load(self.srcfilepath + expFile[:-4] + '_denoised_LfpChIDs' + '.npy')
+            lfpTimes_last = np.load(self.srcfilepath + expFile[:-4] + '_denoised_LfpTimes' + '.npy')
+            LfpForms_last = np.load(self.srcfilepath + expFile[:-4] + '_denoised_LfpForms' + '.npy')
         else:
             filehdf5_bxr = h5py.File(self.srcfilepath + expFile, 'r')  # read LFPs bxr files
             NRecFrames = np.asarray(filehdf5_bxr["3BRecInfo"]["3BRecVars"]["NRecFrames"])[0]
@@ -157,8 +157,8 @@ class LFPAnalysis_Function:
             LfpForms_last = np.asarray(LfpForms_last).reshape(-1)
             ##############save the new results in .npy file as dic
             # Dic = {"LfpChIDs":lfpChId_last,"LfpTimes":lfpTimes_last,"LfpForms":LfpForms_last}
-            np.save(self.srcfilepath+expFile[:-4]+'_denosed_LfpChIDs',lfpChId_last)
-            np.save(self.srcfilepath + expFile[:-4] + '_denosed_LfpTimes', lfpTimes_last)
-            np.save(self.srcfilepath + expFile[:-4] + '_denosed_LfpForms', LfpForms_last)
+            np.save(self.srcfilepath+expFile[:-4]+'_denoised_LfpChIDs',lfpChId_last)
+            np.save(self.srcfilepath + expFile[:-4] + '_denoised_LfpTimes', lfpTimes_last)
+            np.save(self.srcfilepath + expFile[:-4] + '_denoised_LfpForms', LfpForms_last)
         print('Denoise is Done')
         return np.asarray(lfpChId_last), np.asarray(lfpTimes_last),np.asarray(LfpForms_last)
