@@ -1715,13 +1715,13 @@ class MEASeqX_Project:
         fig.savefig(desfilepath + 'hub_rich_club_node_statistics_all' + ".png", format='png', dpi=600)
         plt.close()
 
-    def network_topology_characterization_with_power_law_degree_distribution(self,gene_list_name=None,choose_gene = False,type = None):
+    def network_topology_characterization_with_degree_distribution_regional(self,gene_list_name=None,choose_gene = False,type = None):
         """
-
+        Characterize degree distribution of nodes in nEphys and SRT network topology. Plots regionally i.e. hippo and cortex separate.
             File input needed:
             -------
-                -
-
+                - '[gene_list]_gene_expression_per_cluster.xlsx'
+                - '[gene_list]_SRT_nEphys_network_topological_metrics_per_cluster.xlsx'
             Parameters
             -------
 
@@ -1730,14 +1730,18 @@ class MEASeqX_Project:
 
             File output:
             -------
-                -
-
+                - '[gene_list]_logarithmic_fit_cCDF_condition_[nEphys or SRT]_Degree_[region].xlsx
+                - '[gene_list]_Pareto_linear_binning_condition_[nEphys or SRT]_Degree_[region].xlsx
+                - '[gene_list]_Pareto_linear_binning_condition_[nEphys or SRT]_Degree_[region].png
+                - '[gene_list]_logarithmic_fit_cCDF_regional_Degree.xlsx'
+                - '[gene_list]_logarithmic_fit_cCDF_regional_Degree.png'
         """
+
         path = self.srcfilepath[:self.srcfilepath.rfind('/')]
         desfilepath = path + '/Network_Topology_Characterization/'
         if not os.path.exists(desfilepath):
             os.mkdir(desfilepath)
-        colorMapTitle = gene_list_name + 'Lognormal_cCDF_pooled'
+        colorMapTitle = gene_list_name + '_logarithmic_fit_cCDF_regional_'
         type_name_nEphys = type + ' nEphys'
         type_name_SRT = type + ' SRT'
         if os.path.exists(desfilepath + colorMapTitle + type + ".xlsx"):
@@ -1776,7 +1780,7 @@ class MEASeqX_Project:
                         Region_add.append('Hippo')
                     else:
                         Region_add.append('Not in Region')
-                # Region_add = ['Cortex' if clu in Cortex else 'Hippo' for clu in list(df_new_con["Cluster"])]
+                Region_add = ['Cortex' if clu in Cortex else 'Hippo' for clu in list(df_new_con["Cluster"])]
                 Gene_Expression_Level = []
                 # gene_name = []
                 for bar in df_new_con['Barcodes']:
@@ -1798,7 +1802,7 @@ class MEASeqX_Project:
                 s = pd.Series(range(len(final)))
                 final = final.set_index(s)
                 final['Gene Expression Level'] = final['Gene Expression Level'].astype(float,errors='raise')
-                # final.to_excel(self.srcfilepath + colorMapTitle +con + ".xlsx", index=False)
+                # final.to_excel(desfilepath + colorMapTitle +con + ".xlsx", index=False)
 
 
                 parameter_values_SRT.extend(final[type_name_SRT])
@@ -1839,23 +1843,22 @@ class MEASeqX_Project:
             ax.legend(fontsize=4,loc='upper right', frameon=False, borderaxespad=0.)
             ax.set_yscale('log')
             ax.set_xscale('log')
-            ax.set_xlabel(type)
+            ax.set_xlabel('Degree, k')
             # ax.set_ylim(ymin=0.0001,ymax=1.1)
-            ax.set_ylabel('Complementary Cumulative distribution', fontsize=8, fontweight="bold")
+            ax.set_ylabel('Complementary Cumulative Distribution p(k)', fontsize=8, fontweight="bold")
             ax.set_title(Region)
             Region_count += 1
-        # colorMapTitle = 'Lognormal_for_connection_cCDF'  # 'Truncated_Power_law_for_connection_log_binning'
         plt.tight_layout()
-        plt.savefig(desfilepath + colorMapTitle + 'Lognormal_for_' + type + ".png", format='png', dpi=600)
+        plt.savefig(desfilepath + colorMapTitle + type + ".png", format='png', dpi=600)
         plt.close()
 
-    def network_topology_characterization_with_power_law_degree_distribution_all_regions(self,gene_list_name=None,choose_gene = False,type = None):
+    def network_topology_characterization_with_degree_distribution_pooled(self,gene_list_name=None,choose_gene = False,type = None):
         """
-
+        Characterize degree distribution of nodes in nEphys and SRT network topology. Plots regionally i.e. hippo and cortex separate.
             File input needed:
             -------
-                -
-
+                - '[gene_list]_gene_expression_per_cluster.xlsx'
+                - '[gene_list]_SRT_nEphys_network_topological_metrics_per_cluster.xlsx'
             Parameters
             -------
 
@@ -1864,15 +1867,18 @@ class MEASeqX_Project:
 
             File output:
             -------
-                -
-
+                - '[gene_list]_logarithmic_fit_cCDF_condition_[nEphys or SRT]_Degree_pooled.xlsx
+                - '[gene_list]_Pareto_linear_binning_condition_[nEphys or SRT]_Degree_pooled.xlsx
+                - '[gene_list]_Pareto_linear_binning_condition_[nEphys or SRT]_Degree_pooled.png
+                - '[gene_list]_logarithmic_fit_cCDF_pooled_Degree.xlsx'
+                - '[gene_list]_logarithmic_fit_cCDF_pooled_Degree.png'
         """
 
         path = self.srcfilepath[:self.srcfilepath.rfind('/')]
         desfilepath = path + '/Network_Topology_Characterization/'
         if not os.path.exists(desfilepath):
             os.mkdir(desfilepath)
-        colorMapTitle = gene_list_name + '_Lognormal_cCDF_pooled'
+        colorMapTitle = gene_list_name + '_logarithmic_fit_cCDF_pooled_'
         type_name_nEphys = type + ' nEphys'
         type_name_SRT = type + ' SRT'
         if os.path.exists(desfilepath + colorMapTitle + type + ".xlsx"):
@@ -1963,28 +1969,31 @@ class MEASeqX_Project:
             max_value = 1
             Count_SRT = [i/max_value for i in df_con[type_name_SRT] if ~np.isnan(i)]
             Count_nEphys = [i/max_value for i in df_con[type_name_nEphys] if ~np.isnan(i)]
-            self.Pareto_plot_linear_binning_hist(bin_num=100, min_degree=1, max_degree=1000,Count=list(Count_SRT), color_choose=color_choose, number=con,index=0,name = 'SRT',gene_list_name=gene_list_name,type = type,Region = 'All_region')
-            self.ccdf_plot(ax=ax, Count=list(Count_SRT), color_choose=color_choose, number=con,index=0,name = 'SRT',gene_list_name=gene_list_name,type = type,max_value_raw = max_value_raw,Region = 'All_region')
-            self.ccdf_plot(ax=ax, Count=list(Count_nEphys), color_choose=color_choose, number=con,index=1,name = 'nEphys',gene_list_name=gene_list_name,type = type,max_value_raw = max_value_raw,Region = 'All_region')
+            self.Pareto_plot_linear_binning_hist(bin_num=100, min_degree=1, max_degree=1000,Count=list(Count_SRT), color_choose=color_choose, number=con,index=0,name = 'SRT',gene_list_name=gene_list_name,type = type,Region = 'pooled')
+            self.ccdf_plot(ax=ax, Count=list(Count_SRT), color_choose=color_choose, number=con,index=0,name = 'SRT',gene_list_name=gene_list_name,type = type,max_value_raw = max_value_raw,Region = 'pooled')
+            self.ccdf_plot(ax=ax, Count=list(Count_nEphys), color_choose=color_choose, number=con,index=1,name = 'nEphys',gene_list_name=gene_list_name,type = type,max_value_raw = max_value_raw,Region = 'pooled')
             self.Pareto_plot_linear_binning_hist(bin_num=100, min_degree=1, max_degree=1000,
-                                                 Count=list(Count_nEphys), color_choose=color_choose, number=con,index=1,name = 'nEphys',gene_list_name=gene_list_name,type = type,Region = 'All_region')
+                                                 Count=list(Count_nEphys), color_choose=color_choose, number=con,index=1,name = 'nEphys',gene_list_name=gene_list_name,type = type,Region = 'pooled')
             ###############################
             ax.legend(fontsize=4,loc='upper right', frameon=False, borderaxespad=0.)
             ax.set_yscale('log')
             ax.set_xscale('log')
-            ax.set_xlabel(type)
+            ax.set_xlabel('Degree, k')
             # ax.set_ylim(ymin=0.0001,ymax=1.1)
-            ax.set_ylabel('Complementary Cumulative distribution', fontsize=8, fontweight="bold")
+            ax.set_ylabel('Complementary Cumulative Distribution p(k)', fontsize=8, fontweight="bold")
             # ax.set_title(Region)
             # Region_count += 1
-        # colorMapTitle = 'Lognormal_for_connection_cCDF'  # 'Truncated_Power_law_for_connection_log_binning'
         plt.tight_layout()
-        plt.savefig(desfilepath + colorMapTitle + 'Lognormal_for_' + type + ".png", format='png', dpi=600)
+        plt.savefig(desfilepath + colorMapTitle + type + ".png", format='png', dpi=600)
         plt.close()
 
     def Pareto_plot_linear_binning_hist(self,bin_num=300, min_degree=30, max_degree=900,Count=None,color_choose = None,number=0,index=0,name = 'ST',gene_list_name=None,type = None,Region = None):  # b:  shape parameter
         """plot the Pareto fit.MLEs(Maximum Likelihood Estimate) for shape (if applicable), location, and scale parameters from data.To shift and/or scale the distribution use the loc and scale parameters. """
         # min_degree, max_degree = min_degree/max_degree, max_degree/max_degree
+        path = self.srcfilepath[:self.srcfilepath.rfind('/')]
+        desfilepath = path + '/Network_Topology_Characterization/'
+        if not os.path.exists(desfilepath):
+            os.mkdir(desfilepath)
         color_index = number * 2 + index
         fig, ax = plt.subplots()
         # weights = np.ones_like(Count) / float(len(Count))
@@ -2004,11 +2013,11 @@ class MEASeqX_Project:
         a = {'Raw_Degree': x, 'Raw_hist': y, 'pareto Fit Degree': x, 'Fit Hist': Hist,
              'Shape parameter': [parameter[0]]}
         df = pd.DataFrame.from_dict(a, orient='index').T
-        df.to_excel(self.srcfilepath + gene_list_name+ '_Pareto_linear_' + conditions[number]+'_'+name+'_'+type+'_'+Region + ".xlsx", index=False)
+        df.to_excel(desfilepath + gene_list_name+ '_Pareto_linear_binning_' + conditions[number]+'_'+name+'_'+type+'_'+Region + ".xlsx", index=False)
 
         ax.legend(fontsize=4,loc='upper right', frameon=False, borderaxespad=0.)
-        ax.set_xlabel('Degree')
-        ax.set_ylabel('P(k)')
+        ax.set_xlabel('Degree, k')
+        ax.set_ylabel('p(k)')
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         # ax1.spines['bottom'].set_visible(False)
@@ -2016,12 +2025,16 @@ class MEASeqX_Project:
         # ax.set_ylim(ymin=-0.001)
         # ax.set_xlim(xmin=0, xmax=1000)
         ax.set_xlim(xmin=min_degree, xmax=max_degree)
-        colorMapTitle = gene_list_name+ '_Pareto_linear_' + conditions[number]+'_'+name+'_'+type+'_'+Region  # 'Truncated_Power_law_for_connection_log_binning'
-        fig.savefig(self.srcfilepath + colorMapTitle + ".png", format='png', dpi=600)
+        colorMapTitle = gene_list_name+ '_Pareto_linear_binning_' + conditions[number]+'_'+name+'_'+type+'_'+Region  # 'Truncated_Power_law_for_connection_log_binning'
+        fig.savefig(desfilepath + colorMapTitle + ".png", format='png', dpi=600)
         plt.close()
 
     def ccdf_plot(self, ax=None, Count=None, color_choose=None, number=0, index=0, name='SRT', gene_list_name=None,type=None, max_value_raw=0, Region=None):
         #################################################
+        path = self.srcfilepath[:self.srcfilepath.rfind('/')]
+        desfilepath = path + '/Network_Topology_Characterization/'
+        if not os.path.exists(desfilepath):
+            os.mkdir(desfilepath)
         color_index = number * 2 + index
         count_log = [i for i in np.log(Count) if ~np.isinf(i)]
         import powerlaw
@@ -2035,7 +2048,7 @@ class MEASeqX_Project:
         cdf_fit = stats.lognorm.sf(bins, param[0], loc=param[1], scale=param[2])
         bins = bins * max_value_raw
         ax.plot(bins, cdf_fit, color=color_choose[color_index],
-                label='Lognormal fit' + '[' + r'$\mu$' + '=' + str(
+                label='logarithmic_fit' + '[' + r'$\mu$' + '=' + str(
                     round(np.mean(count_log), 1)) + ', ' + r'$\sigma$' + '=' + str(
                     round(np.std(count_log), 1)) + ']', alpha=0.3)
         ############################
@@ -2051,7 +2064,7 @@ class MEASeqX_Project:
         a = {'Raw_Degree(bins)': data, 'Raw_cCDF': CDF, 'Fit Degree(bins)': bins, 'Fit cCDF': cdf_fit,
              'mu(log)': [np.mean(count_log)], 'sigma(log)': [np.std(count_log)], 'R2 Values': [r2]}
         df = pd.DataFrame.from_dict(a, orient='index').T
-        df.to_excel(self.srcfilepath + gene_list_name + '_Lognormal_cCDF_' + conditions[
+        df.to_excel(desfilepath + gene_list_name + '_logarithmic_fit_cCDF_' + conditions[
             number] + '_' + name + '_' + type + '_' + Region + ".xlsx", index=False)
 
 if __name__ == '__main__':
@@ -2063,19 +2076,20 @@ if __name__ == '__main__':
     Analysis.nEphys_functional_connectivity_excel_to_gephi() # Step 2 individual
     for gene_list in column_list: # Step 3 individual
         Analysis.SRT_mutual_information_connectivity_excel_to_gephi(gene_list_name=gene_list)
-    ################################################################# Obtain Network Topological Metrics
+    ################################################################# nEphys and SRT Network Topological Metrics
     Analysis.network_topological_metrics() # Step 4 individual
     Analysis.coordinates_for_network_topological_metrics()  # Step 5 individual
     for gene_list in column_list: # Step 6 individual
         Analysis.network_topological_feature_statistics_per_node(gene_list_name=gene_list)
+    ################################################################# Network topology characterization - hub rich club nodes
     for gene_list in column_list: # Step 7 individual
         Analysis.SRT_network_topology_hub_rich_club_plot(percent=0.05,gene_list_name=gene_list) # option if using gene list
-    for gene_list in column_list: # or Step 7 individual
+    for gene_list in column_list: # Step 7 individual
         Analysis.SRT_network_topology_hub_rich_club_plot_selected(percent=0.05,gene_list_name='IEGs',Given_gene_list = False) # option if using select genes
     Analysis.SRT_network_topology_hub_rich_club_plot_selected_statistics(percent=0.05) # Step 8 individual
-    ################################################################# Network topology characterization
-    Analysis.network_topology_characterization_with_power_law_degree_distribution(gene_list_name='IEGs', choose_gene=False,type='Degree')
-    Analysis.network_topology_characterization_with_power_law_degree_distribution_all_regions(gene_list_name='IEGs', choose_gene=False, type='Degree')
+    ################################################################# Network topology characterization - degree distribution
+    Analysis.network_topology_characterization_with_degree_distribution_regional(gene_list_name='IEGs', choose_gene=False,type='Degree') # Step 7 pooled condition plotting (main path should contain the condition subfolders)
+    Analysis.network_topology_characterization_with_degree_distribution_pooled(gene_list_name='IEGs', choose_gene=False, type='Degree') # Step 7 pooled condition plotting (main path should contain the condition subfolders)
 
 
 
