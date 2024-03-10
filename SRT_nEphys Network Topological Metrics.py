@@ -26,7 +26,7 @@ import connectivipy
 matplotlib_axes_logger.setLevel('ERROR')
 
 """
-The following input parameters are used for specific gene list and multiple gene plotting correlated with network activity features. 
+The following input parameters are used for calculating network topology metrics from SRT and nEphys datasets.
 To compare conditions put the path for datasets in the input parameters and label condition name i.e. SD and ENR and assign desired color
 
 """
@@ -47,7 +47,7 @@ condition2_path = r'Z:/ANALYSES/SPATIOSCALES- 10X genomics/Data/ENR/'
 color = ['silver', 'dodgerblue']  # color for pooled plotting of conditions
 color_choose = ['silver', 'dodgerblue', 'green', 'orange', 'purple', 'black'] # color for multiple gene plots
 
-network_topology_feature = ['Clustering Coefficient',"Centrality","Degree",'Betweenness']
+network_topology_metric = ['Clustering Coefficient',"Centrality","Degree",'Betweenness']
 
 Region = ['Cortex', 'Hippo']
 Cortex = ['EC', 'PC']
@@ -84,7 +84,7 @@ class MEASeqX_Project:
 
     def getRawdata(self, start, stop, expFile, channel, thr=2000):
         '''
-        Get network activity feature raw data
+        Get network topology metric raw data
         '''
         filehdf5 = h5py.File(expFile, 'r')
         # CONSTANT
@@ -273,7 +273,7 @@ class MEASeqX_Project:
 
         return csv_file,tissue_lowres_scalef,features_name,matr_raw,barcodes,img,csv_file_cluster
 
-    def get_Groupid_new(self,Lfps_ID,barcode_cluster =None,nEphys_cluster =None,data = None):
+    def get_Groupid_SRT(self,Lfps_ID,barcode_cluster =None,nEphys_cluster =None,data = None):
 
         Channel_ID = [data['Channel ID'][i] for i in range(len(data))]
         Channel_Barcodes = [str(data['Barcodes_Channel_ID'][i])[2:-1] for i in range(len(data))]
@@ -299,7 +299,7 @@ class MEASeqX_Project:
 
         return cluster_ids,clusters_ID,colorMap
 
-    def get_Groupid_new_nEphys(self,ChsGroups=None):
+    def get_Groupid_nEphys(self,ChsGroups=None):
         # ########################################################
         cluster_ids = []
         clusters_ID = []  # group by clusters
@@ -312,6 +312,54 @@ class MEASeqX_Project:
                     clusters_ID.append(chsIdx)
 
         return cluster_ids,clusters_ID
+
+    def get_Groupid_nEphys_hub(self,Lfps_ID_1,ChsGroups=None,MeaStreams =None):
+        dictChsId = {}
+        clustersList = ChsGroups
+        for clusterToBeAnalyzed in ChsGroups['Name']:
+            for idx in range(clustersList.shape[0]):
+                if str(clustersList[idx][0]) == clusterToBeAnalyzed:
+                    chsLabel = clustersList[idx]['Chs']
+                    chsIdx = []
+                    for el in chsLabel:
+                        chsIdx.append((el[0] - 1)* 64 + (el[1] - 1))
+                    dictChsId[clusterToBeAnalyzed] = chsIdx
+        colorMap = np.array(np.zeros(len(MeaStreams[:]), dtype=int))
+        for tempKey in dictChsId.keys():
+            for i in range(len(ChsGroups['Name'])):
+                if tempKey == ChsGroups['Name'][i]:
+                    colorMap[dictChsId[tempKey]] = i+1
+        colorMap_Temp = []
+        Lfps_ID,colormap,Clusters,cluster_name = self.Class_ID_detect(Lfps_ID_1,ChsGroups=ChsGroups)
+        for i in Lfps_ID:
+            colorMap_Temp.append(colorMap[i])
+        return colorMap_Temp
+
+    def Class_ID_detect(self, Lfps_ID_1, ChsGroups=None):
+        Class_LFPs_ID = Lfps_ID_1
+        colormap = []
+        Clusters = []
+        cluster_name = []
+        clusters_names = np.unique(ChsGroups['Name'])
+        a = [0] * len(ChsGroups['Chs'])
+        cluster_ids = []
+        for i in range(len(ChsGroups['Chs'])):
+            cluster_id = []
+            Clusters.append(ChsGroups['Name'][i])
+            ################################################################################sort the cluster_name
+            for k in range(len(clusters_names)):
+                if ChsGroups['Name'][i] == clusters_names[k]:
+                    l = k
+            ################################################################################
+            for j in range(len(ChsGroups['Chs'][i])):
+                cluster_id.append((ChsGroups['Chs'][i][j][0] - 1) * 64 + (ChsGroups['Chs'][i][j][1] - 1))
+            cluster_ids.append(cluster_id)
+        for k in Class_LFPs_ID:
+            for i in range(len(cluster_ids)):
+                if k in cluster_ids[i]:
+                    colormap.append(i)
+                    cluster_name.append(ChsGroups['Name'][i])
+        return Class_LFPs_ID, colormap, Clusters, cluster_name
 
     def DTF(self, A, sigma=None, n_fft=None):
         """Direct Transfer Function (DTF)
@@ -849,7 +897,7 @@ class MEASeqX_Project:
                 if type(ChsGroups['Name'][0]) != str:
                     ChsGroups['Name'] = [i.decode("utf-8") for i in ChsGroups['Name']]
                 MeaChs2ChIDsVector = np.asarray(filehdf5_bxr["3BResults"]["3BInfo"]["MeaChs2ChIDsVector"])
-                cluster_ids,clusters_ID = self.get_Groupid_new_nEphys(ChsGroups=ChsGroups)
+                cluster_ids,clusters_ID = self.get_Groupid_nEphys(ChsGroups=ChsGroups)
                 print (filename_bxr)
                 filetype_xlsx = expFile[:-4] + '_nEphys_functional_connectivity.xlsx'
                 filename_xlsx, Root = self.get_filename_path(self.srcfilepath, filetype_xlsx)
@@ -1033,7 +1081,7 @@ class MEASeqX_Project:
 
         data = pd.read_excel(self.srcfilepath + gene_list_name + '_SRT_mutual_information_connectivity' + ".xlsx")
 
-        filename_network_topology_feature_statistics_from_nEphys = pd.read_excel(
+        filename_network_topology_metric_statistics_from_nEphys = pd.read_excel(
             self.srcfilepath + 'SRT_nEphys_Multiscale_Coordinates_for_network_topological_metrics.xlsx')
 
         data_SRT_nEphys_Coordinates = pd.read_excel(self.srcfilepath + 'SRT_nEphys_Multiscale_Coordinates.xlsx')
@@ -1058,7 +1106,7 @@ class MEASeqX_Project:
         coordinate_nEphys = [[MeaChs2ChIDsVector["Col"][id] - 1, MeaChs2ChIDsVector["Row"][id] - 1] for id in
                            data_nEphys['Channel ID']]
         ##########################
-        cluster_ids, clusters_ID, colorMap_hub_rich_club_nodes_all = self.get_Groupid_new([],
+        cluster_ids, clusters_ID, colorMap_hub_rich_club_nodes_all = self.get_Groupid_SRT([],
                                                                                           barcode_cluster=barcode_cluster,
                                                                                           nEphys_cluster=nEphys_cluster,
                                                                                           data=data)  # cluster_ID <-> self.clusters
@@ -1097,25 +1145,25 @@ class MEASeqX_Project:
                     channel_ID.append(id)
                     barcodes.append(str(data['Barcodes_Corr_id'][list(data['Corr_id']).index(id)])[2:-1])
                     # print(str(data['Barcodes_Corr_id'][list(data['Corr_id']).index(id)])[2:-1])
-                    # # print([str(bar) for bar in filename_network_topology_feature_statistics_from_nEphys['Barcodes']])
-                    # print(str(data['Barcodes_Corr_id'][list(data['Corr_id']).index(id)])[2:-1] in [str(bar) for bar in filename_network_topology_feature_statistics_from_nEphys['Barcodes']])
+                    # # print([str(bar) for bar in filename_network_topology_metric_statistics_from_nEphys['Barcodes']])
+                    # print(str(data['Barcodes_Corr_id'][list(data['Corr_id']).index(id)])[2:-1] in [str(bar) for bar in filename_network_topology_metric_statistics_from_nEphys['Barcodes']])
                     if str(data['Barcodes_Corr_id'][list(data['Corr_id']).index(id)])[2:-1] in [str(bar) for bar in
-                                                                                                filename_network_topology_feature_statistics_from_nEphys[
+                                                                                                filename_network_topology_metric_statistics_from_nEphys[
                                                                                                     'Barcodes']]:
                         id_nEphys = list(
-                            [str(bar) for bar in filename_network_topology_feature_statistics_from_nEphys['Barcodes']]).index(
+                            [str(bar) for bar in filename_network_topology_metric_statistics_from_nEphys['Barcodes']]).index(
                             str(data['Barcodes_Corr_id'][list(data['Corr_id']).index(id)])[2:-1])
                         result_clustering_coefficient_nEphys.append(
-                            list(filename_network_topology_feature_statistics_from_nEphys['Clustering Coefficient nEphys'])[
+                            list(filename_network_topology_metric_statistics_from_nEphys['Clustering Coefficient nEphys'])[
                                 id_nEphys])
                         result_centrality_nEphys.append(
-                            list(filename_network_topology_feature_statistics_from_nEphys['Centrality nEphys'])[id_nEphys])
+                            list(filename_network_topology_metric_statistics_from_nEphys['Centrality nEphys'])[id_nEphys])
                         result_degree_nEphys.append(
-                            list(filename_network_topology_feature_statistics_from_nEphys['Degree nEphys'])[id_nEphys])
+                            list(filename_network_topology_metric_statistics_from_nEphys['Degree nEphys'])[id_nEphys])
                         result_betweenness_nEphys.append(
-                            list(filename_network_topology_feature_statistics_from_nEphys['Betweenness nEphys'])[id_nEphys])
+                            list(filename_network_topology_metric_statistics_from_nEphys['Betweenness nEphys'])[id_nEphys])
                         nEphys_coordinate.append(
-                            list(filename_network_topology_feature_statistics_from_nEphys['Coordinates in nEphys'])[id_nEphys])
+                            list(filename_network_topology_metric_statistics_from_nEphys['Coordinates in nEphys'])[id_nEphys])
 
                     if id in clustering_coefficient.keys():
                         result_clustering_coefficient.append(clustering_coefficient[id])
@@ -1156,11 +1204,11 @@ class MEASeqX_Project:
 
             File output:
             -------
-                - '[gene_list]_hub_rich_club_map_functional_links_without_clusters_[%].png'
-                - '[gene_list]_hub_rich_club_map_functional_links_with_clusters_[%].png'
-                - '[gene_list]_hub_rich_club_node_list_[%].xlsx'
-                - '[gene_list]_hub_rich_club_node_statistics_[%].xlsx'
-                - '[gene_list]_hub_rich_club_node_statistics_[%].png'
+                - '[gene_list]_SRT_hub_rich_club_map_functional_links_without_clusters_[%].png'
+                - '[gene_list]_SRT_hub_rich_club_map_functional_links_with_clusters_[%].png'
+                - '[gene_list]_SRT_hub_rich_club_node_list_[%].xlsx'
+                - '[gene_list]_SRT_hub_rich_club_node_statistics_[%].xlsx'
+                - '[gene_list]_SRT_hub_rich_club_node_statistics_[%].png'
 
         """
         path = self.srcfilepath[:self.srcfilepath.rfind('/')]
@@ -1237,8 +1285,7 @@ class MEASeqX_Project:
             node_strength_nodes = np.unique(node_strength_nodes)
             cluster_coefficient_nodes = self.clustering_coefficient_detect(df, percent=percent)
             cluster_coefficient_nodes = np.unique(cluster_coefficient_nodes)
-            efficiency_nodes = self.efficiency_detect(df, data_new['Channel ID'], data_new['Corr_id'],
-                                                      percent=percent)
+            efficiency_nodes = self.efficiency_detect(df, data_new['Channel ID'], data_new['Corr_id'],percent=percent)
             efficiency_nodes = np.unique(efficiency_nodes)
             hub_nodes_collect = []
             # hub_nodes_collect.extend(betweenness_centrality_indices)
@@ -1251,8 +1298,7 @@ class MEASeqX_Project:
             hub_nodes = [int(i) for i in hub_nodes]
             hub_scores = list(s.value_counts(normalize=False).values)
             hub_scores = [int(i) * 2 for i in hub_scores]
-
-            # colorMap_hub = self.get_Groupid_new(hub_nodes, ChsGroups=ChsGroups, MeaStreams=MeaStreams)
+            # colorMap_hub = self.get_Groupid_SRT(hub_nodes, ChsGroups=ChsGroups, MeaStreams=MeaStreams)
             ###################################################
             Degree_1 = [key[1] for key in df.degree()]
             channel_ID_1 = [values[0] for values in df.degree()]
@@ -1270,18 +1316,15 @@ class MEASeqX_Project:
             ###########################################
             rich_club_node = [channel_ID_1[i] for i in range(len(Degree_1)) if Degree_1[i] >= index]
             rich_club_node = [i for i in rich_club_node if i in hub_nodes]
-            rich_club_node_size = [hub_scores[j] for i in rich_club_node for j in range(len(hub_nodes)) if
-                                   i == hub_nodes[j]]
-            # colorMap_rich_club = self.get_Groupid_new(rich_club_node, ChsGroups=ChsGroups,
+            rich_club_node_size = [hub_scores[j] for i in rich_club_node for j in range(len(hub_nodes)) if i == hub_nodes[j]]
+            # colorMap_rich_club = self.get_Groupid_SRT(rich_club_node, ChsGroups=ChsGroups,
             #                                           MeaStreams=MeaStreams)
             # ############################
             New_coordinates_1 = np.asarray([[x_coordinate[i], y_coordinate[i]] for i in hub_nodes])
             rich_club_coordinates = np.asarray([[x_coordinate[i], y_coordinate[i]] for i in rich_club_node])
-            #     ############all links
+            ############all links
             hub_rich_club_nodes_all = hub_nodes + rich_club_node
-
-            cluster_ids, clusters_ID, colorMap_hub_rich_club_nodes_all = self.get_Groupid_new(
-                hub_rich_club_nodes_all, barcode_cluster=barcode_cluster, nEphys_cluster=nEphys_cluster, data=data_new)
+            cluster_ids, clusters_ID, colorMap_hub_rich_club_nodes_all = self.get_Groupid_SRT(hub_rich_club_nodes_all, barcode_cluster=barcode_cluster, nEphys_cluster=nEphys_cluster, data=data_new)
             New_coordinates = np.asarray([[x_coordinate[i], y_coordinate[i]] for i in hub_rich_club_nodes_all])
             hub_rich_club_nodes_all = np.unique(hub_rich_club_nodes_all)
             data_filter = [[data['Channel ID'][i], data['Corr_id'][i]] for i in range(len(data))]
@@ -1303,12 +1346,13 @@ class MEASeqX_Project:
 
             # fig, (ax_1, ax) = plt.subplots(2, 1, figsize=(15, 20))
             fig, ax_1 = plt.subplots()
-            hub_nodes = [hub_nodes[i] for i in range(len(hub_nodes)) if hub_nodes[
-                i] in node_color_filter]  ##########################change here to show more or less nodes and links
+            hub_nodes = [hub_nodes[i] for i in range(len(hub_nodes)) if hub_nodes[i] in node_color_filter and hub_scores[i]>= max(hub_scores) - 0]  ##########################change here to show more or less nodes and links based on hub score
+            max_value = max(hub_scores)
+            print(f"The maximum value is: {max_value}")
+            # hub_nodes = list(df.nodes()) # Show all hub nodes/rich club nodes.
             hub_scores = [hub_scores[i] for i in range(len(hub_nodes)) if hub_nodes[i] in node_color_filter]
 
-            nodes = nx.draw_networkx_nodes(df_new_all_links, pos=dic_all_links, nodelist=hub_nodes, ax=ax_1,
-                                           node_color='blue', label='Hub Nodes', node_size=hub_scores)
+            nodes = nx.draw_networkx_nodes(df_new_all_links, pos=dic_all_links, nodelist=hub_nodes, ax=ax_1, node_color='blue', label='Hub Nodes', node_size=hub_scores)
             nodes.set_edgecolor('none')
             rich_club_node = [i for i in rich_club_node if i in node_color_filter and i in hub_nodes]
             nx.draw_networkx_nodes(df_new_all_links, pos=dic_all_links, ax=ax_1, nodelist=rich_club_node,
@@ -1325,7 +1369,7 @@ class MEASeqX_Project:
             # ax_1.set_aspect('equal', 'box')
             ax_1.legend(loc='best', fontsize='small')
             ax_1.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
-            colorMapTitle = gene_list_name + '_hub_rich_club_map_functional_links_without_clusters_' + str(percent)
+            colorMapTitle = gene_list_name + '_SRT_hub_rich_club_map_functional_links_without_clusters_' + str(percent)
             fig.savefig(desfilepath + colorMapTitle + ".png", format='png', dpi=600)
             plt.close()
             ######################################################################################
@@ -1355,14 +1399,14 @@ class MEASeqX_Project:
             # ax.set_aspect('equal', 'box')
             ax.grid(False)
             ax.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
-            colorMapTitle = gene_list_name + '_hub_rich_club_map_functional_links_with_clusters_' + str(percent)
+            colorMapTitle = gene_list_name + '_SRT_hub_rich_club_map_functional_links_with_clusters_' + str(percent)
             fig.savefig(desfilepath + colorMapTitle + ".png", format='png', dpi=600)
             plt.close()
             # ##################################################
             a = {'Hub nodes': np.unique(hub_nodes), 'Rich club nodes': np.unique(rich_club_node)}
             dataframe = pd.DataFrame.from_dict(a, orient='index').T
             dataframe.to_excel(
-                desfilepath + gene_list_name + '_hub_rich_club_node_list_' + str(percent) + '.xlsx',
+                desfilepath + gene_list_name + '_SRT_hub_rich_club_node_list_' + str(percent) + '.xlsx',
                 index=False)
             #########################################################################################################
             hub_clusters = []
@@ -1390,7 +1434,7 @@ class MEASeqX_Project:
             ax.set_xticklabels(self.clusters)
             ax.set_ylabel('# of Nodes')
             ax.legend()
-            colorMapTitle = gene_list_name + '_hub_rich_club_node_statistics_' + str(percent)
+            colorMapTitle = gene_list_name + '_SRT_hub_rich_club_node_statistics_' + str(percent)
             fig.savefig(desfilepath + colorMapTitle + ".png", format='png', dpi=600)
             plt.close()
             #####################################
@@ -1398,261 +1442,7 @@ class MEASeqX_Project:
                 {'Clusters': self.clusters, 'Hub nodes': hub_clusters,
                  'Rich club nodes': rich_club_clusters})
             dataframe.to_excel(
-                desfilepath + gene_list_name + '_hub_rich_club_node_statistics_' + str(percent) + '.xlsx',
-                index=False)
-
-    def SRT_network_topology_hub_rich_club_plot_selected(self, percent=0.05,gene_list_name=None,Given_gene_list = True):
-        """
-        Calcuate number of hub nodes and rich clubs in the SRT network topology with a select gene list option.
-
-            File input needed:
-            -------
-                - related files
-                - '[gene_list]_SRT_mutual_information_connectivity.xlsx'
-
-            Parameters
-            -------
-
-            Returns
-            -------
-
-            File output:
-            -------
-                - '[gene_list]_hub_rich_club_map_functional_links_without_clusters_[%].png'
-                - '[gene_list]_hub_rich_club_map_functional_links_with_clusters_[%].png'
-                - '[gene_list]_hub_rich_club_node_list_[%].xlsx'
-                - '[gene_list]_hub_rich_club_node_statistics_[%].xlsx'
-                - '[gene_list]_hub_rich_club_node_statistics_[%].png'
-        """
-
-        # Read related information
-        path = self.srcfilepath[:self.srcfilepath.rfind('/')]
-        desfilepath = path + '/Correlated_Network_Topological_Metrics/'
-        if not os.path.exists(desfilepath):
-            os.mkdir(desfilepath)
-        csv_file, tissue_lowres_scalef, features_name, matr_raw, barcodes, img, csv_file_cluster = self.read_related_files()
-        barcode_cluster = np.asarray(csv_file_cluster["Barcode"])
-        nEphys_cluster = np.asarray(csv_file_cluster["Loupe Clusters"])
-        # color = ['red' if i == 1 else 'black' for i in csv_file['selection']]
-        # label = {1: 'Detect points', 0: 'Background'}
-        # cdict = {1: 'red', 0: 'black'}
-        scatter_x = np.asarray(csv_file["pixel_x"] * tissue_lowres_scalef)
-        scatter_y = np.asarray(csv_file["pixel_y"] * tissue_lowres_scalef)
-        group = np.asarray(csv_file["selection"])
-        barcode_CSV = np.asarray(csv_file["barcode"])
-        g = 1
-        ix = np.where(group == g)
-        #################################################################################Filters:
-        # Remove spots with fewer than 1000 unique genes
-        # Remove mitochondrial genes and ribosomal protein coding genes
-        import re
-
-        gene_name = [str(features_name[i])[2:-1] for i in range(len(features_name))]
-
-        filter_gene_id = [i for i in range(len(gene_name)) if
-                          len(re.findall(r'^SRS', gene_name[i], flags=re.IGNORECASE)) > 0 or len(
-                              re.findall(r'^Mrp', gene_name[i], flags=re.IGNORECASE)) > 0 or len(
-                              re.findall(r'^Rp', gene_name[i], flags=re.IGNORECASE)) > 0 or len(
-                              re.findall(r'^mt', gene_name[i], flags=re.IGNORECASE)) > 0 or len(
-                              re.findall(r'^Ptbp', gene_name[i], flags=re.IGNORECASE)) > 0]
-        # gene_name = [gene_name[i] for i in range(len(gene_name)) if i not in filter_gene_id]
-        matr = np.delete(matr_raw, filter_gene_id, axis=0)
-        # calculate UMIs and genes per cell
-        # umis_per_cell = np.asarray(matr.sum(axis=0)).squeeze()  # Or matr.sum(axis=0)
-        genes_per_cell = np.asarray((matr > 0).sum(axis=0)).squeeze()
-
-        ###############delete the nodes with less then 1000 gene count
-        deleted_notes = [i for i in range(len(genes_per_cell)) if genes_per_cell[i] <= 1000]
-        ###############delete the nodes not in clusters
-        deleted_notes_cluster = [i for i in range(len(genes_per_cell)) if str(barcodes[i])[2:-1] not in barcode_cluster]
-        deleted_notes.extend(deleted_notes_cluster)
-        deleted_notes = list(np.unique(deleted_notes))
-        ##########################################################
-        # matr = np.delete(matr, deleted_notes, axis=1)
-
-        new_id = [j for i in barcode_CSV for j in range(len(barcodes)) if str(barcodes[j])[2:-1] == i]
-        #########################
-        x_filter = [scatter_x[ix][i] for i in range(len(scatter_x[ix])) if new_id[i] not in deleted_notes]
-        y_filter = [scatter_y[ix][i] for i in range(len(scatter_y[ix])) if new_id[i] not in deleted_notes]
-        # barcodes_filter = [str(barcodes[i])[2:-1] for i in range(len(barcodes)) if i not in deleted_notes]
-        #####################
-
-        mask_id = [i for i in range(len(group)) if group[i] == 1]
-        extent = [min([scatter_x[i] for i in mask_id]), max([scatter_x[i] for i in mask_id]),
-                  min([scatter_y[i] for i in mask_id]), max([scatter_y[i] for i in mask_id])]
-
-        img_cut = img[int(extent[2]):int(extent[3]) + 2, int(extent[0]):int(extent[1]) + 3,:]  # x and y value set to cut the areas interested
-        x_coordinate, y_coordinate = x_filter - extent[0], y_filter - extent[2]
-        #########################################################
-        if Given_gene_list == True:
-            gene_list_name = 'Selected_genes'
-        filetype_xlsx = gene_list_name + '_SRT_mutual_information_connectivity' + ".xlsx"
-
-        filename_xlsx, Root = self.get_filename_path(desfilepath, filetype_xlsx)
-        if len(filename_xlsx) > 0:
-            data = pd.read_excel(Root[0] + '/' + filename_xlsx[0])
-            data_new = data.copy()
-            df = nx.from_pandas_edgelist(data_new, source='Channel ID', target='Corr_id',edge_attr=True)
-
-        #     #########################################################hub nodes detection
-            # betweenness_centrality_indices = self.hub_detect(df)
-            # betweenness_centrality_indices = np.unique(betweenness_centrality_indices)
-            node_strength_nodes = self.node_strength_detect(df, percent=percent)
-            node_strength_nodes = np.unique(node_strength_nodes)
-            cluster_coefficient_nodes = self.clustering_coefficient_detect(df, percent=percent)
-            cluster_coefficient_nodes = np.unique(cluster_coefficient_nodes)
-            efficiency_nodes = self.efficiency_detect(df, data_new['Channel ID'],data_new['Corr_id'], percent=percent)
-            efficiency_nodes = np.unique(efficiency_nodes)
-            hub_nodes_collect = []
-            # hub_nodes_collect.extend(betweenness_centrality_indices)
-            hub_nodes_collect.extend(node_strength_nodes)
-            hub_nodes_collect.extend(cluster_coefficient_nodes)
-            hub_nodes_collect.extend(efficiency_nodes)
-            #############################################
-            s = pd.Series(hub_nodes_collect)
-            hub_nodes = list(s.value_counts(normalize=False).index)
-            hub_nodes = [int(i) for i in hub_nodes]
-            hub_scores = list(s.value_counts(normalize=False).values)
-            hub_scores = [int(i) * 2 for i in hub_scores]
-
-            # colorMap_hub = self.get_Groupid_new(hub_nodes, ChsGroups=ChsGroups, MeaStreams=MeaStreams)
-            ###################################################
-            Degree_1 = [key[1] for key in df.degree()]
-            channel_ID_1 = [values[0] for values in df.degree()]
-            rcc = nx.rich_club_coefficient(df, normalized=False)
-            ###############################
-            rcc_sort = sorted(rcc.items(), key=lambda k: k[1], reverse=True)
-            Value = [rcc_sort[i][1] for i in range(len(rcc_sort))]
-            Index = [rcc_sort[i][0] for i in range(len(rcc_sort))]
-            ###########################################
-            # Value_temp = [i for i in Value if i < 1]
-            Value_temp = Value
-            median = np.average(Value_temp) + np.std(Value_temp)
-            Temp = [Index[i] for i in range(len(Value)) if Value[i] <= median]
-            index = Temp[0]
-            ###########################################
-            rich_club_node = [channel_ID_1[i] for i in range(len(Degree_1)) if Degree_1[i] >= index]
-            rich_club_node = [i for i in rich_club_node if i in hub_nodes]
-            rich_club_node_size = [hub_scores[j] for i in rich_club_node for j in range(len(hub_nodes)) if
-                                   i == hub_nodes[j]]
-            # colorMap_rich_club = self.get_Groupid_new(rich_club_node, ChsGroups=ChsGroups,
-            #                                           MeaStreams=MeaStreams)
-            # ############################
-            New_coordinates_1 = np.asarray([[x_coordinate[i], y_coordinate[i]] for i in hub_nodes])
-            rich_club_coordinates = np.asarray([[x_coordinate[i], y_coordinate[i]] for i in rich_club_node])
-        #     ############all links
-            hub_rich_club_nodes_all = hub_nodes + rich_club_node
-
-            cluster_ids,clusters_ID,colorMap_hub_rich_club_nodes_all = self.get_Groupid_new(hub_rich_club_nodes_all,barcode_cluster =barcode_cluster,nEphys_cluster =nEphys_cluster,data = data_new)
-            New_coordinates = np.asarray([[x_coordinate[i], y_coordinate[i]] for i in hub_rich_club_nodes_all])
-            hub_rich_club_nodes_all = np.unique(hub_rich_club_nodes_all)
-            data_filter = [[data['Channel ID'][i], data['Corr_id'][i]] for i in range(len(data))]
-            data_all_links = [data for data in data_filter if
-                              data[0] in hub_rich_club_nodes_all and data[1] in hub_rich_club_nodes_all]
-
-            df_all_links = pd.DataFrame({'Channel ID': [int(i[0]) for i in data_all_links],
-                                         'Corr_id': [int(i[1]) for i in data_all_links]})
-            # print(type([int(i[0]) for i in data_all_links]),type([int(i[0]) for i in data_all_links][0]))
-            df_new_all_links = nx.from_pandas_edgelist(df_all_links, source='Channel ID',target='Corr_id')
-            # esmall = [(u, v) for (u, v, d) in df_new_all_links.edges(data=True)]
-            # esmall = [(u, v) for (u, v, d) in df_new_all_links.edges(data=True) if d["weight"] >= np.mean(data['coor_Per_data'])]
-            node_color_filter = [v for v in df_new_all_links.nodes]
-            # print(len(node_color_filter))
-            dic_all_links = {}
-            for i in range(len(node_color_filter)):
-                dic_all_links.update({node_color_filter[i]: (x_coordinate[node_color_filter[i]], y_coordinate[node_color_filter[i]])})
-
-            # fig, (ax_1, ax) = plt.subplots(2, 1, figsize=(15, 20))
-            fig, ax_1 = plt.subplots()
-            hub_nodes = [hub_nodes[i] for i in range(len(hub_nodes)) if hub_nodes[i] in node_color_filter] ##########################change here to show more or less nodes and links
-            hub_scores = [hub_scores[i] for i in range(len(hub_nodes)) if hub_nodes[i] in node_color_filter]
-
-            nodes = nx.draw_networkx_nodes(df_new_all_links, pos=dic_all_links, nodelist=hub_nodes, ax=ax_1,node_color='blue', label='Hub Nodes', node_size=hub_scores)
-            nodes.set_edgecolor('none')
-            rich_club_node = [i for i in rich_club_node if i in node_color_filter and i in hub_nodes]
-            nx.draw_networkx_nodes(df_new_all_links, pos=dic_all_links, ax=ax_1, nodelist=rich_club_node,
-                                   node_color='None', node_size=rich_club_node_size, label='Rich Club Nodes',
-                                   node_shape=markers.MarkerStyle(marker='o', fillstyle='none'), alpha=0.7,edgecolors = 'red',linewidths=0.5)
-            nodeset = set(hub_nodes)
-            edgelist = [edge for edge in df_new_all_links.edges() if edge[0] in nodeset and edge[1] in nodeset]
-            nx.draw_networkx_edges(df_new_all_links, pos=dic_all_links, ax=ax_1, width=0.2, alpha=0.2,edge_color='grey',edgelist=edgelist)
-            ax_1.imshow(img_cut, alpha=0.1)
-            ax_1.set_xlabel('Pixel')
-            ax_1.set_ylabel('Pixel')
-            # ax_1.set_aspect('equal', 'box')
-            ax_1.legend(loc='best', fontsize='small')
-            ax_1.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
-            colorMapTitle = gene_list_name+ '_hub_rich_club_map_functional_links_without_clusters_' + str(percent)
-            fig.savefig(desfilepath + colorMapTitle + ".png", format='png', dpi=600)
-            plt.close()
-            ######################################################################################
-            fig, ax = plt.subplots()
-            cm = plt.cm.get_cmap('Set1', len(self.clusters))  # Paired_r
-            bul = ax.scatter(New_coordinates[:, 0], New_coordinates[:, 1],
-                             c=colorMap_hub_rich_club_nodes_all, cmap=cm, marker='o',
-                             edgecolors='None', s=hub_scores + rich_club_node_size, alpha=1)
-            ax.imshow(img_cut, alpha=0.1)
-            ax.scatter(New_coordinates_1[:, 0], New_coordinates_1[:, 1], c='', marker='o',
-                       edgecolors='blue',
-                       linewidth=0.4, s=hub_scores, label='Hub nodes')
-            ax.scatter(rich_club_coordinates[:, 0], rich_club_coordinates[:, 1], c='', marker='o',
-                       edgecolors='darkred',
-                       linewidth=0.5, s=rich_club_node_size, label='Rich-club nodes')
-            nx.draw_networkx_edges(df_new_all_links, pos=dic_all_links, ax=ax, width=0.1, alpha=0.1,
-                                   edge_color='grey')
-            ax.set_xlabel('Pixel')
-            ax.set_ylabel('Pixel')
-            bul.set_clim(1, len(self.clusters) + 1)
-            cbar = fig.colorbar(bul, extend='both', ticks=range(1, len(self.clusters) + 1),
-                                label='Clusters',
-                                shrink=.7)
-            cbar.ax.set_yticklabels(self.clusters)
-
-            ax.legend(loc='upper left', fontsize='xx-small')
-            # ax.set_aspect('equal', 'box')
-            ax.grid(False)
-            ax.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
-            colorMapTitle = gene_list_name + '_hub_rich_club_map_functional_links_with_clusters_' + str(percent)
-            fig.savefig(desfilepath + colorMapTitle + ".png", format='png', dpi=600)
-            plt.close()
-            # ##################################################
-            a = {'Hub nodes': np.unique(hub_nodes), 'Rich club nodes': np.unique(rich_club_node)}
-            dataframe = pd.DataFrame.from_dict(a, orient='index').T
-            dataframe.to_excel(desfilepath + gene_list_name + '_hub_rich_club_node_list_' + str(percent) + '.xlsx',index=False)
-            #########################################################################################################
-            hub_clusters = []
-            rich_club_clusters = []
-            for i in range(len(clusters_ID)):
-                hub_cluster = 0
-                rich_club_cluster = 0
-                for j in hub_nodes:
-                    if j in clusters_ID[i]:
-                        hub_cluster += 1
-                for k in rich_club_node:
-                    if k in clusters_ID[i]:
-                        rich_club_cluster += 1
-                hub_clusters.append(hub_cluster)
-                rich_club_clusters.append(rich_club_cluster)
-            x = np.arange(len(self.clusters))
-            fig, ax = plt.subplots(figsize=(15, 10))
-            ax.bar(x, hub_clusters, width=0.2, label='Hub Nodes')
-            for a, b in zip(x, hub_clusters):
-                ax.text(a, b + 0.05, '%.0f' % b, ha='center', va='bottom', fontsize=7)
-            plt.bar(x + 0.2, rich_club_clusters, width=0.2, label='Rich Club Nodes')
-            for a, b in zip(x + 0.2, rich_club_clusters):
-                ax.text(a, b + 0.05, '%.0f' % b, ha='center', va='bottom', fontsize=7)
-            ax.set_xticks(x)
-            ax.set_xticklabels(self.clusters)
-            ax.set_ylabel('# of Nodes')
-            ax.legend()
-            colorMapTitle = gene_list_name+ '_hub_rich_club_node_statistics' + str(percent)
-            fig.savefig(desfilepath + colorMapTitle + ".png", format='png', dpi=600)
-            plt.close()
-            #####################################
-            dataframe = pd.DataFrame(
-                {'Clusters': self.clusters, 'Hub nodes': hub_clusters,
-                 'Rich club nodes': rich_club_clusters})
-            dataframe.to_excel(desfilepath + gene_list_name+'_hub_rich_club_node_statistics_' + str(percent) + '.xlsx',
+                desfilepath + gene_list_name + '_SRT_hub_rich_club_node_statistics_' + str(percent) + '.xlsx',
                 index=False)
 
     def SRT_network_topology_hub_rich_club_plot_selected_statistics(self,percent=0.05):
@@ -1670,8 +1460,8 @@ class MEASeqX_Project:
 
             File output:
             -------
-                - '[gene_list]_hub_rich_club_node_statistics_all.xlsx'
-                - '[gene_list]_hub_rich_club_node_statistics_all.png'
+                - '[gene_list]_SRT_hub_rich_club_node_statistics_all.xlsx'
+                - '[gene_list]_SRT_hub_rich_club_node_statistics_all.png'
         """
 
         path = self.srcfilepath[:self.srcfilepath.rfind('/')]
@@ -1679,7 +1469,7 @@ class MEASeqX_Project:
         if not os.path.exists(desfilepath):
             os.mkdir(desfilepath)
         #################read hub rich club values
-        filetype_hub = '_hub_rich_club_node_statistics_' + str(percent) + '.xlsx'
+        filetype_hub = '_SRT_hub_rich_club_node_statistics_' + str(percent) + '.xlsx'
         filename_hub, Root = self.get_filename_path(self.srcfilepath, filetype_hub)
         cluster_all = []
         hub_count = []
@@ -1697,7 +1487,7 @@ class MEASeqX_Project:
         dataframe = pd.DataFrame(
             {'Clusters': cluster_all, 'Hub nodes':hub_count,
              'Rich club nodes': rich_club_count,'Gene list name':gene_name_list})
-        dataframe.to_excel(desfilepath + 'hub_rich_club_node_statistics_all' + '.xlsx',index=False)
+        dataframe.to_excel(desfilepath + 'SRT_hub_rich_club_node_statistics_all' + '.xlsx',index=False)
         ##########################
         fig = plt.figure()
         ax = fig.add_subplot(2, 1, 1)
@@ -1712,8 +1502,263 @@ class MEASeqX_Project:
         # ax1.set_title('Rich Club Count', fontsize=8)
         ax1.legend(loc='best', fontsize='xx-small')
         ax1.set_xlabel('')
-        fig.savefig(desfilepath + 'hub_rich_club_node_statistics_all' + ".png", format='png', dpi=600)
+        fig.savefig(desfilepath + 'SRT_hub_rich_club_node_statistics_all' + ".png", format='png', dpi=600)
         plt.close()
+
+    def nEphys_network_topology_hub_rich_club_plot(self, percent=0.05):
+        """
+        Calcuate number of hub nodes and rich clubs in the SRT network topology.
+
+            File input needed:
+            -------
+                - '[file]_nEphys_functional_connectivity.xlsx'
+
+            Parameters
+            -------
+
+            Returns
+            -------
+
+            File output:
+            -------
+                - '[file]_nEphys_hub_rich_club_map_functional_links_without_clusters_[%].png'
+                - '[file]_nEphys_hub_rich_club_map_functional_links_with_clusters_[%].png'
+                - '[file]_nEphys_hub_rich_club_node_list_[%].xlsx'
+                - '[file]_nEphys_hub_rich_club_node_statistics_[%].xlsx'
+                - '[file]_nEphys_hub_rich_club_node_statistics_[%].png'
+
+        """
+
+        path = self.srcfilepath[:self.srcfilepath.rfind('/')]
+        desfilepath = path + '/Correlated_Network_Topological_Metrics/'
+        if not os.path.exists(desfilepath):
+            os.mkdir(desfilepath)
+        filetype_bxr = '.bxr'
+        filename_bxr, Root = self.get_filename_path(self.srcfilepath, filetype_bxr)
+
+        def to_excel(file_list, i):
+            expFile = file_list[i]
+            if expFile[0] != '.':
+                print(expFile)
+                if expFile[0] != '.':
+                    filehdf5_bxr = h5py.File(self.srcfilepath + expFile, 'r')  # read LFPs bxr files
+                    ChsGroups = np.asarray(filehdf5_bxr["3BUserInfo"]["ChsGroups"])
+                    if type(ChsGroups['Name'][0]) != str:
+                        ChsGroups['Name'] = [i.decode("utf-8") for i in ChsGroups['Name']]
+                    MeaChs2ChIDsVector = np.asarray(filehdf5_bxr["3BResults"]["3BInfo"]["MeaChs2ChIDsVector"])
+                    MeaStreams = np.asarray(filehdf5_bxr["3BRecInfo"]["3BMeaStreams"]["Raw"]["Chs"])
+                    #########################################################
+                    filetype_xlsx = expFile[:-4] + '_nEphys_functional_connectivity.xlsx'
+                    filename_xlsx, Root = self.get_filename_path(self.srcfilepath, filetype_xlsx)
+                    if len(filename_xlsx) > 0:
+                        data = pd.read_excel(Root[0] + '/' + filename_xlsx[0])
+                        data_new = data.copy()
+                        data_new = data_new[data_new['coor_Per_data'] > 0]
+                        new_Row = MeaChs2ChIDsVector["Col"] - 1
+                        new_Col = MeaChs2ChIDsVector["Row"] - 1
+                        df = nx.from_pandas_edgelist(data_new, source='Class_LFPs_ID_Per', target='Corr_ID_Per',
+                                                     edge_attr=True)
+                        cluster_ids = []
+                        clusters_ID = []
+                        ########################################################
+                        for i in range(len(self.clusters)):
+                            cluster_ID = []
+                            for k in range(len(ChsGroups['Name'])):
+                                if ChsGroups['Name'][k] == self.clusters[i]:
+                                    for j in range(len(ChsGroups['Chs'][k])):
+                                        cluster_ids.append(
+                                            (ChsGroups['Chs'][k][j][0] - 1) * 64 + (ChsGroups['Chs'][k][j][1] - 1))
+                                        cluster_ID.append(
+                                            (ChsGroups['Chs'][k][j][0] - 1) * 64 + (ChsGroups['Chs'][k][j][1] - 1))
+                            clusters_ID.append(cluster_ID)
+                        #########################################################hub nodes detection
+                        # betweenness_centrality_indices = self.hub_detect(df)
+                        # betweenness_centrality_indices = np.unique(betweenness_centrality_indices)
+                        node_strength_nodes = self.node_strength_detect(df, percent=percent)
+                        node_strength_nodes = np.unique(node_strength_nodes)
+                        cluster_coefficient_nodes = self.clustering_coefficient_detect(df, percent=percent)
+                        cluster_coefficient_nodes = np.unique(cluster_coefficient_nodes)
+                        efficiency_nodes = self.efficiency_detect(df, data_new['Class_LFPs_ID_Per'],
+                                                                  data_new['Corr_ID_Per'], percent=percent)
+                        efficiency_nodes = np.unique(efficiency_nodes)
+                        hub_nodes_collect = []
+                        # hub_nodes_collect.extend(betweenness_centrality_indices)
+                        hub_nodes_collect.extend(node_strength_nodes)
+                        hub_nodes_collect.extend(cluster_coefficient_nodes)
+                        hub_nodes_collect.extend(efficiency_nodes)
+                        #############################################
+                        s = pd.Series(hub_nodes_collect)
+                        hub_nodes = list(s.value_counts(normalize=False).index)
+                        hub_nodes = [int(i) for i in hub_nodes]
+                        hub_scores = list(s.value_counts(normalize=False).values)
+                        hub_scores = [int(i) * 2 for i in hub_scores]
+                        # colorMap_hub = self.get_Groupid_nEphys_hub(hub_nodes, ChsGroups=ChsGroups, MeaStreams=MeaStreams)
+                        ###################################################
+                        Degree_1 = [key[1] for key in df.degree()]
+                        channel_ID_1 = [values[0] for values in df.degree()]
+                        rcc = nx.rich_club_coefficient(df, normalized=False)
+                        ###############################
+                        rcc_sort = sorted(rcc.items(), key=lambda k: k[1], reverse=True)
+                        Value = [rcc_sort[i][1] for i in range(len(rcc_sort))]
+                        Index = [rcc_sort[i][0] for i in range(len(rcc_sort))]
+                        ###########################################
+                        # Value_temp = [i for i in Value if i < 1]
+                        Value_temp = Value
+                        median = np.std(Value_temp)
+                        Temp = [Index[i] for i in range(len(Value)) if Value[i] <= median]
+                        index = Temp[0]
+                        ###########################################
+                        rich_club_node = [channel_ID_1[i] for i in range(len(Degree_1)) if Degree_1[i] >= index]
+                        rich_club_node = [i for i in rich_club_node if i in hub_nodes]
+                        rich_club_node_size = [hub_scores[j] for i in rich_club_node for j in range(len(hub_nodes)) if
+                                               i == hub_nodes[j]]
+                        # colorMap_rich_club = self.get_Groupid_nEphys_hub(rich_club_node, ChsGroups=ChsGroups,
+                        #                                           MeaStreams=MeaStreams)
+                        # ############################
+                        New_coordinates_1 = np.asarray([[new_Row[i], new_Col[i]] for i in hub_nodes])
+                        rich_club_coordinates = np.asarray([[new_Row[i], new_Col[i]] for i in rich_club_node])
+                        ############all links
+                        hub_rich_club_nodes_all = hub_nodes + rich_club_node
+                        colorMap_hub_rich_club_nodes_all = self.get_Groupid_nEphys_hub(hub_rich_club_nodes_all,ChsGroups=ChsGroups,MeaStreams=MeaStreams)
+                        New_coordinates = np.asarray([[new_Row[i], new_Col[i]] for i in hub_rich_club_nodes_all])
+                        hub_rich_club_nodes_all = np.unique(hub_rich_club_nodes_all) # Change here to show unique or overlapping hub/richclub nodes
+                        data_filter = [[data['Class_LFPs_ID_Per'][i], data['Corr_ID_Per'][i]] for i in range(len(data))
+                                       if data['coor_Per_data'][i] > 0]
+                        data_all_links = [data for data in data_filter if
+                                          data[0] in hub_rich_club_nodes_all and data[1] in hub_rich_club_nodes_all]
+
+                        df_all_links = pd.DataFrame({'Class_LFPs_ID_Per': [int(i[0]) for i in data_all_links],
+                                                     'Corr_ID_Per': [int(i[1]) for i in data_all_links]})
+                        # print(type([int(i[0]) for i in data_all_links]),type([int(i[0]) for i in data_all_links][0]))
+                        df_new_all_links = nx.from_pandas_edgelist(df_all_links, source='Class_LFPs_ID_Per',
+                                                                   target='Corr_ID_Per')
+                        # esmall = [(u, v) for (u, v, d) in df_new_all_links.edges(data=True)]
+                        # esmall = [(u, v) for (u, v, d) in df_new_all_links.edges(data=True) if d["weight"] >= np.mean(data['coor_Per_data'])]
+                        node_color_filter = [v for v in df_new_all_links.nodes]
+                        # print(len(node_color_filter))
+                        dic_all_links = {}
+                        for i in range(len(node_color_filter)):
+                            dic_all_links.update(
+                                {node_color_filter[i]: (new_Row[node_color_filter[i]], new_Col[node_color_filter[i]])})
+
+                        # fig, (ax_1, ax) = plt.subplots(2, 1, figsize=(15, 20))
+                        fig, ax_1 = plt.subplots()
+                        hub_nodes = [hub_nodes[i] for i in range(len(hub_nodes)) if hub_nodes[i] in node_color_filter and hub_scores[i] >= max(hub_scores) -0]  ########################## change here to show more or less nodes and links based on hub score
+                        max_value = max(hub_scores)
+                        print(f"The maximum value is: {max_value}")
+                        # hub_nodes = list(df.nodes()) # Show all hub nodes/rich club nodes.
+                        hub_scores = [hub_scores[i] for i in range(len(hub_nodes)) if hub_nodes[i] in node_color_filter]
+
+                        nodes = nx.draw_networkx_nodes(df_new_all_links, pos=dic_all_links, nodelist=hub_nodes, ax=ax_1,
+                                                       node_color='blue', label='Hub Nodes', node_size=hub_scores)
+                        nodes.set_edgecolor('none')
+                        rich_club_node = [i for i in rich_club_node if
+                                          i in node_color_filter and i in hub_nodes]
+                        nx.draw_networkx_nodes(df_new_all_links, pos=dic_all_links, ax=ax_1,
+                                               nodelist=rich_club_node,
+                                               node_color='None', node_size=rich_club_node_size,
+                                               label='Rich Club Nodes',
+                                               node_shape=markers.MarkerStyle(marker='o', fillstyle='none'), alpha=0.7,
+                                               edgecolors='red', linewidths=0.5)
+                        nodeset = set(hub_nodes)
+                        edgelist = [edge for edge in df_new_all_links.edges() if
+                                    edge[0] in nodeset and edge[1] in nodeset]
+                        nx.draw_networkx_edges(df_new_all_links, pos=dic_all_links, ax=ax_1, width=0.2, alpha=0.2,
+                                               edge_color='grey', edgelist=edgelist)
+                        ax_1.set_ylim(64, 0)
+                        ax_1.set_xlim(0, 64)
+                        ax_1.set_xlabel('electrode')
+                        ax_1.set_ylabel('electrode')
+                        ax_1.set_aspect('equal', 'box')
+                        ax_1.legend(loc='best', fontsize='small')
+                        ax_1.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
+                        colorMapTitle = expFile[:-4] + '_nEphys_hub_rich_club_map_functional_links_without_clusters_' + str(
+                            percent)
+                        fig.savefig(desfilepath + colorMapTitle + ".png", format='png', dpi=600)
+                        plt.close()
+                        ######################################################################################
+                        fig, ax = plt.subplots()
+                        cm = plt.cm.get_cmap('Set1', len(ChsGroups['Name']))  # Paired_r
+                        bul = ax.scatter(New_coordinates[:, 0], New_coordinates[:, 1],
+                                         c=colorMap_hub_rich_club_nodes_all, cmap=cm, marker='o',
+                                         edgecolors='None', s=hub_scores + rich_club_node_size, alpha=1)
+                        ax.scatter(New_coordinates_1[:, 0], New_coordinates_1[:, 1], c='', marker='o',
+                                   edgecolors='blue',
+                                   linewidth=0.4, s=hub_scores, label='Hub nodes')
+                        ax.scatter(rich_club_coordinates[:, 0], rich_club_coordinates[:, 1], c='', marker='o',
+                                   edgecolors='darkred',
+                                   linewidth=0.5, s=rich_club_node_size, label='Rich-club nodes')
+                        nx.draw_networkx_edges(df_new_all_links, pos=dic_all_links, ax=ax, width=0.1, alpha=0.1,
+                                               edge_color='grey')
+                        ax.set_xlabel('electrode')
+                        ax.set_ylabel('electrode')
+                        bul.set_clim(1, len(ChsGroups['Name']) + 1)
+                        cbar = fig.colorbar(bul, extend='both', ticks=range(1, len(ChsGroups['Name']) + 1),
+                                            label='Clusters',
+                                            shrink=.7)
+                        cbar.ax.set_yticklabels(ChsGroups['Name'])
+                        ax.set_ylim(64, 0)
+                        ax.set_xlim(0, 64)
+                        ax.legend(loc='upper left', fontsize='xx-small')
+                        ax.set_aspect('equal', 'box')
+                        ax.grid(False)
+                        ax.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
+                        colorMapTitle = expFile[:-4] + '_nEphys_hub_rich_club_map_functional_links_with_clusters_' + str(
+                            percent)
+                        fig.savefig(desfilepath + colorMapTitle + ".png", format='png', dpi=600)
+                        plt.close()
+                        # ##################################################
+                        a = {'Hub nodes': np.unique(hub_nodes), 'Rich club nodes': np.unique(rich_club_node)}
+                        dataframe = pd.DataFrame.from_dict(a, orient='index').T
+                        dataframe.to_excel(desfilepath + expFile[:-4] + '_nEphys_hub_rich_club_node_list_' + str(percent) + '.xlsx',
+                            index=False)
+                        #########################################################################################################
+                        hub_clusters = []
+                        rich_club_clusters = []
+                        for i in range(len(clusters_ID)):
+                            hub_cluster = 0
+                            rich_club_cluster = 0
+                            for j in hub_nodes:
+                                if j in clusters_ID[i]:
+                                    hub_cluster += 1
+                            for k in rich_club_node:
+                                if k in clusters_ID[i]:
+                                    rich_club_cluster += 1
+                            hub_clusters.append(hub_cluster)
+                            rich_club_clusters.append(rich_club_cluster)
+                        x = np.arange(len(self.clusters))
+                        fig, ax = plt.subplots(figsize=(15, 10))
+                        ax.bar(x, hub_clusters, width=0.2, label='Hub Nodes')
+                        for a, b in zip(x, hub_clusters):
+                            ax.text(a, b + 0.05, '%.0f' % b, ha='center', va='bottom', fontsize=7)
+                        plt.bar(x + 0.2, rich_club_clusters, width=0.2, label='Rich Club Nodes')
+                        for a, b in zip(x + 0.2, rich_club_clusters):
+                            ax.text(a, b + 0.05, '%.0f' % b, ha='center', va='bottom', fontsize=7)
+                        ax.set_xticks(x)
+                        ax.set_xticklabels(self.clusters)
+                        ax.set_ylabel('# of Nodes')
+                        ax.legend()
+                        colorMapTitle = expFile[:-4] + '_nEphys_hub_rich_club_node_statistics'
+                        fig.savefig(desfilepath + colorMapTitle + ".png", format='png', dpi=600)
+                        plt.close()
+                        #####################################
+                        dataframe = pd.DataFrame(
+                            {'Clusters': self.clusters, 'Hub nodes': hub_clusters,
+                             'Rich club nodes': rich_club_clusters})
+                        dataframe.to_excel(desfilepath + expFile[:-4] + '_nEphys_hub_rich_club_node_statistics_' + str(percent) + '.xlsx',index=False)
+
+        threads = []
+        x = 0
+        for t in range(len(filename_bxr)):
+            t = threading.Thread(target=to_excel, args=(filename_bxr, x))
+            threads.append(t)
+            x += 1
+
+        for thr in threads:
+            thr.start()
+            # for thr in threads:
+            thr.join()
+        print("all over")
 
     def network_topology_characterization_with_degree_distribution_regional(self,gene_list_name=None,choose_gene = False,type = None):
         """
@@ -2083,10 +2128,9 @@ if __name__ == '__main__':
         Analysis.network_topological_feature_statistics_per_node(gene_list_name=gene_list)
     ################################################################# Network topology characterization - hub rich club nodes
     for gene_list in column_list: # Step 7 individual
-        Analysis.SRT_network_topology_hub_rich_club_plot(percent=0.05,gene_list_name=gene_list) # option if using gene list
-    for gene_list in column_list: # Step 7 individual
-        Analysis.SRT_network_topology_hub_rich_club_plot_selected(percent=0.05,gene_list_name='IEGs',Given_gene_list = False) # option if using select genes
-    Analysis.SRT_network_topology_hub_rich_club_plot_selected_statistics(percent=0.05) # Step 8 individual
+        Analysis.SRT_network_topology_hub_rich_club_plot(percent=0.20,gene_list_name=gene_list)
+    Analysis.SRT_network_topology_hub_rich_club_plot_selected_statistics(percent=0.20) # Step 8 individual
+    Analysis.nEphys_network_topology_hub_rich_club_plot(percent=0.20)  # Step 9 individual
     ################################################################# Network topology characterization - degree distribution
     Analysis.network_topology_characterization_with_degree_distribution_regional(gene_list_name='IEGs', choose_gene=False,type='Degree') # Step 7 pooled condition plotting (main path should contain the condition subfolders)
     Analysis.network_topology_characterization_with_degree_distribution_pooled(gene_list_name='IEGs', choose_gene=False, type='Degree') # Step 7 pooled condition plotting (main path should contain the condition subfolders)

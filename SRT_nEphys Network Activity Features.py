@@ -27,7 +27,7 @@ import help_functions.LFP_denoising as LFP_denoising
 matplotlib_axes_logger.setLevel('ERROR')
 
 """
-The following input parameters are used for specific gene list and multiple gene plotting correlated with network activity features. 
+The following input parameters are used for calculating network activity features from SRT and nEphys datasets.
 To compare conditions put the path for datasets in the input parameters and label condition name i.e. SD and ENR and assign desired color
 
 """
