@@ -75,7 +75,7 @@ class MEASeqX_Project:
 
     def getRawdata(self, start, stop, expFile, channel, thr=2000):
         '''
-        Get network activity feature raw data
+        Get raw data
         '''
         filehdf5 = h5py.File(expFile, 'r')
         # CONSTANT
