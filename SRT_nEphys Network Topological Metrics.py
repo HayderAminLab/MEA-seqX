@@ -7,7 +7,7 @@ Created on Dec 12 2021
 import matplotlib.pyplot as plt
 from scipy.signal import butter, lfilter, hilbert
 from scipy import signal,stats
-import networkx as nx  #####################################uninstall umap-learn
+import networkx as nx
 import h5py
 import numpy as np
 import pandas as pd
@@ -38,7 +38,6 @@ Start_time = 0
 Stop_time = 30
 
 column_list = ["IEGs"]  ### "Hipoo Signaling Pathway","Synaptic Vescicles_Adhesion","Receptors and channels","Synaptic plasticity","Hippoocampal Neurogenesis","IEGs"
-gene_list_choose = ['gene1','gene2','gene3','gene4']
 
 conditions = ['SD', 'ENR']
 condition1_path = r'Z:/ANALYSES/SPATIOSCALES- 10X genomics/Data/SD/'
