@@ -12,20 +12,20 @@ This platform also allows for the identification of different cell types based o
   - data - additional data needed to use and test run the repository. NOTE: This data can only be combined with the provided Zenodo datasets and cannot be used for personal data.
   - help_functions - low-level functions used to clean and process nEphys data
   - README - current file
-  - LICENSE - usage and redistrubution conditions
+  - LICENSE - usage and redistribution conditions
   - Multiscale Spatial Alignment.py - main top-level function used to overlay the SRT and nEphys data with automatic slice alignment
   - SRT Gene Expression.py - top-level functions used for preprocessing, filtering, normalizing, and plotting provided gene lists and select genes for further analysis
   - SRT_nEphys Network Activity Features.py - main top-level, multi-step functions used to calculate specified network activity features from nEphys data and correlate them with gene expression values from SRT gene lists
   - XGBoost Algorithm Prediction.py - top-level function used to predict nEphys network activity features from SRT gene list expression values using XGBoost Algorithm
   - SRT_nEphys Network Topological Metrics.py - main top-level, multi-step functions used to calculate specified network topological metrics from nEphys data and correlate them with gene expression values from SRT gene lists
-  - Non-Negative Matrix Factorization.py - top level function used to identify distinct spatiotemporal patterns across the combined SRT and n‐Ephys modalities
+  - Non-Negative Matrix Factorization.py - top-level function used to identify distinct spatiotemporal patterns across the combined SRT and n‐Ephys modalities
 
 
 ## **2. 🚀 Getting Started**
 
   - Download SRT and nEphys data from Zenodo and separate into subfolders based on condition i.e. SD and ENR. Include data from both the repository and downloaded datasets.
   - If using personal data, format folder structure as instructed for the provided data. 
-  - Clone the respository locally.
+  - Clone the repository locally.
        > git clone https://github.com/HayderAminLab/MEA-seqX.git
   - Go to the directory and work through the codes in the following order:
     1. Multiscale Spatial Alignment
@@ -34,7 +34,7 @@ This platform also allows for the identification of different cell types based o
     4. XGBoost Algorithm Prediction
     5. SRT_nEphys Network Topological Metrics
     6. Non-Negative Matrix Factorization
-   NOTE: For multi-step functions follow the order specified in the code. 
+   NOTE: For multi-step functions, follow the order specified in the code. 
      
 ## **3. 🧠 📦 Data**
 
@@ -46,7 +46,7 @@ The following datasets have been provided for using and test running the MEA-seq
 
 Python >= 3.7; all analyses and testing were performed using Python 3.7 within PyCharm V.2023.2
 
-Software packages and tools used for all analyses and testing are as follows with links to repositories:
+Software packages and tools used for all analyses and testing are as follows, with links to repositories:
 
   - sklearn(scikit-learn) V.1.2.2 (https://github.com/scikit-learn/scikit-learn)
      - sklearn.metrics.explained_variance_score
