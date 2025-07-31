@@ -75,3 +75,34 @@ Software packages and tools used for all analyses and testing are as follows wit
   - STutility V.0.1.0 (https://ludvigla.github.io/STUtility_web_site/)
   - PHATE (https://github.com/KrishnaswamyLab/PHATE)
   - CARD (https://github.com/YingMa0107/CARD)
+
+## **5. 📄 Citation & Associated Publication**
+
+We kindly ask you to **📌 cite** our paper if you use our code in your research.
+
+**📘 Publication:**  
+Emery BA, Hu X, Klütsch D, Khanzada S, Larsson L, Dumitru I, Frisén J, Lundeberg J, Kempermann G & Amin H. (2025).  
+**MEA‑seqX**: High‑Resolution Profiling of Large‑Scale Electrophysiological and Transcriptional Network Dynamics  
+*Advanced Science*, 12(20):2412373.  
+[🔗 View online](https://doi.org/10.1002/advs.202412373) • [📄 Download PDF](https://github.com/HayderAminLab/MEA-seqX/raw/main/Emery%20et%20al%202025_MEA%E2%80%90seqX.pdf)
+
+<pre>
+@article{Emery2025MEAseqX,
+  author    = {Brett A. Emery, Xin Hu, Diana Klütsch, Shahrukh Khanzada, Ludvig Larsson, Ionut Dumitru, Jonas Frisén, Joakim Lundeberg, Gerd Kempermann and Hayder Amin},
+  title     = {{MEA‑seqX}: High‑Resolution Profiling of Large‑Scale Electrophysiological and Transcriptional Network Dynamics},
+  journal   = {Advanced Science},
+  volume    = {12},
+  number    = {20},
+  pages     = {2412373},
+  year      = {2025},
+  doi       = {10.1002/advs.202412373},
+  url       = {https://doi.org/10.1002/advs.202412373}
+}
+</pre>
+
+## **6. 📬 Contact**
+
+For questions about the 🧠 **`code`**, please [open an issue](https://github.com/HayderAminLab/DENOISING/issues) in this repository.
+
+For questions about the 📄 **`paper`**, feel free to contact  
+**✉️ [Dr.-Ing. Hayder Amin](mailto:hayder.amin@dzne.de)** 
