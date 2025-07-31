@@ -7,7 +7,7 @@ The platform integrates high-density microelectrode arrays, spatial transcriptom
 It enables the study of nested dynamics between transcription and function, revealing coordinated spatiotemporal dynamics in brain circuitry at both molecular and functional levels. 
 This platform also allows for the identification of different cell types based on their distinct bimodal profiles and uses machine learning algorithms to predict network-wide electrophysiological features from spatial gene expression.
 
-## **Contents**
+## **1. Contents**
 
   - data - additional data needed to use and test run the repository. NOTE: This data can only be combined with the provided Zenodo datasets and cannot be used for personal data.
   - help_functions - low-level functions used to clean and process nEphys data
@@ -21,7 +21,7 @@ This platform also allows for the identification of different cell types based o
   - Non-Negative Matrix Factorization.py - top level function used to identify distinct spatiotemporal patterns across the combined SRT and n‐Ephys modalities
 
 
-## **Getting Started**
+## **2. Getting Started**
 
   - Download SRT and nEphys data from Zenodo and separate into subfolders based on condition i.e. SD and ENR. Include data from both the repository and downloaded datasets.
   - If using personal data, format folder structure as instructed for the provided data. 
@@ -36,13 +36,13 @@ This platform also allows for the identification of different cell types based o
     6. Non-Negative Matrix Factorization
    NOTE: For multi-step functions follow the order specified in the code. 
      
-## **Data**
+## **3. Data**
 
 The following datasets have been provided for using and test running the MEA-seqX platform. Additional data needed to run the repository for these datasets are included in the repository data subfolder.
   - Dataset of Spatial Transcriptomics Mouse Hippocampal Slices (https://doi.org/10.5281/zenodo.10626259)
   - Dataset of HD-MEA n-Ephys Mouse Hippocampal Slices (https://doi.org/10.5281/zenodo.10620559)
 
-## **Requirements**
+## **4. Requirements**
 
 Python >= 3.7; all analyses and testing were performed using Python 3.7 within PyCharm V.2023.2
 
